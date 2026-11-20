@@ -1,0 +1,815 @@
+<!doctype html>
+<html
+  lang="en"
+  data-title-en="Makan Homayoun · Blue-team security"
+  data-title-fr="Makan Homayoun · Cybersécurité défensive"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Makan Homayoun · Blue-team security</title>
+    <meta
+      name="description"
+      content="Makan Homayoun is a Computer Science Technology student at John Abbott College looking for a blue-team / SOC internship. Projects: a segmented Wazuh SIEM lab with validated MITRE ATT&CK detections, and a Python phishing-triage pipeline."
+    />
+    <meta name="author" content="Makan Homayoun" />
+    <meta name="theme-color" content="#101317" />
+    <meta name="color-scheme" content="dark" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Makan Homayoun · Blue-team security" />
+    <meta
+      property="og:description"
+      content="A segmented Wazuh SIEM lab that caught three simulated attacks, and a Python phishing-triage pipeline. Throw a packet at the firewall while you are there."
+    />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="/src/styles/index.css" />
+
+    <script>
+      // Language before first paint: the visitor's saved choice, else the browser's language, else English.
+      // Entrance states only apply once scripting is known to work; if the app never starts, drop them.
+      (function () {
+        var root = document.documentElement;
+        var lang = null;
+        try {
+          lang = localStorage.getItem('casefile.lang');
+        } catch (error) {}
+        if (lang !== 'en' && lang !== 'fr') lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+        root.lang = lang;
+        if (lang === 'fr') document.title = root.getAttribute('data-title-fr') || document.title;
+        root.classList.add('js');
+        setTimeout(function () {
+          if (!window.__caseFileBooted) root.classList.remove('js');
+        }, 6000);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- ───────────── Icon sprite (referenced with <use href="#id">) ───────────── -->
+    <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+      <defs>
+        <symbol id="i-github" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+        </symbol>
+        <symbol id="i-linkedin" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+        </symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          </g>
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M12 15V3" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-ur" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7h10v10" />
+            <path d="M7 17 17 7" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-down" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14" />
+            <path d="m19 12-7 7-7-7" />
+          </g>
+        </symbol>
+        <symbol id="i-play" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M7 4.5v15l12-7.5-12-7.5Z" />
+        </symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </g>
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </g>
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </g>
+        </symbol>
+        <symbol id="i-sweep" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            <path d="M3 21v-5h5" />
+          </g>
+        </symbol>
+      </defs>
+    </svg>
+
+    <a class="skip" href="#about"><span lang="en">Skip to content</span><span lang="fr">Aller au contenu</span></a>
+
+    <!-- ───────────── Classification banner ───────────── -->
+    <div class="tlp" id="top">
+      <div class="wrap tlp__row">
+        <span class="tlp__mark">TLP:CLEAR</span>
+        <span class="tlp__text"><span lang="en">Public release · no limit on disclosure</span><span lang="fr">Diffusion publique · aucune restriction</span></span>
+        <span class="tlp__clock" id="clock" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <!-- ───────────── Header ───────────── -->
+    <header class="bar" id="bar">
+      <div class="wrap bar__row">
+        <a class="bar__brand" href="#home">
+          <span class="bar__mono" aria-hidden="true">MH</span>
+          <span class="bar__name">Makan Homayoun</span>
+        </a>
+
+        <nav class="bar__nav" id="nav">
+          <a href="#about" data-nav="about"><span class="bar__num">01</span><span lang="en">About</span><span lang="fr">À propos</span></a>
+          <a href="#experience" data-nav="experience"><span class="bar__num">02</span><span lang="en">Experience</span><span lang="fr">Parcours</span></a>
+          <a href="#projects" data-nav="projects"><span class="bar__num">03</span><span lang="en">Projects</span><span lang="fr">Projets</span></a>
+          <a href="#skills" data-nav="skills"><span class="bar__num">04</span><span lang="en">Skills</span><span lang="fr">Compétences</span></a>
+        </nav>
+
+        <div class="bar__tools">
+          <div class="lang" role="group" aria-label="Language · Langue">
+            <button type="button" data-set-lang="en" aria-pressed="true" aria-label="English">EN</button>
+            <button type="button" data-set-lang="fr" aria-pressed="false" aria-label="Français">FR</button>
+          </div>
+          <button class="iconbtn bar__menu" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">
+            <svg class="icon iconbtn__open" aria-hidden="true"><use href="#i-menu" /></svg>
+            <svg class="icon iconbtn__shut" aria-hidden="true"><use href="#i-close" /></svg>
+            <span class="sr-only">Menu</span>
+          </button>
+        </div>
+      </div>
+      <div class="bar__progress" aria-hidden="true"><span id="progress"></span></div>
+    </header>
+
+    <main id="main">
+      <!-- ═════════════ HOME: the map ═════════════ -->
+      <section class="hero" id="home" aria-labelledby="hero-title">
+        <div class="wrap hero__grid">
+          <div class="hero__text">
+            <h1 class="hero__title" id="hero-title">
+              <span class="hero__line"><span data-intro-line>Makan</span></span>
+              <span class="hero__line"><span data-intro-line>Homayoun</span></span>
+            </h1>
+
+            <p class="hero__sub" data-intro>
+              <span lang="en">Blue-team security. <em>Detections proven under attack.</em></span>
+              <span lang="fr">Cybersécurité défensive. <em>Des détections éprouvées sous attaque.</em></span>
+            </p>
+
+            <p class="hero__lede" data-intro>
+              <span lang="en">Computer Science Technology student at John Abbott College, looking for a SOC internship. I build detections, then attack my own lab to prove they work.</span>
+              <span lang="fr">Étudiant en Techniques de l’informatique au Cégep John Abbott, à la recherche d’un stage en SOC. Je conçois des détections, puis j’attaque mon propre laboratoire pour prouver qu’elles fonctionnent.</span>
+            </p>
+
+            <div class="hero__cta" data-intro>
+              <a class="btn btn--ink" href="#projects">
+                <span lang="en">See the projects</span><span lang="fr">Voir les projets</span>
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-down" /></svg>
+              </a>
+              <a class="btn" lang="en" href="./cv/Makan-Homayoun-CV.pdf" download="Makan-Homayoun-CV.pdf">
+                <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+                <span>Download CV</span>
+              </a>
+              <a class="btn" lang="fr" href="./cv/Makan-Homayoun-CV-FR.pdf" download="Makan-Homayoun-CV-FR.pdf">
+                <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+                <span>Télécharger le CV</span>
+              </a>
+            </div>
+
+            <dl class="hero__facts" data-intro>
+              <div>
+                <dt><span lang="en">Simulated attacks detected</span><span lang="fr">Attaques simulées détectées</span></dt>
+                <dd>3<i>/3</i></dd>
+              </div>
+              <div>
+                <dt><span lang="en">Unit tests on the triage pipeline</span><span lang="fr">Tests unitaires du pipeline de triage</span></dt>
+                <dd>36</dd>
+              </div>
+              <div>
+                <dt><span lang="en">False positives on the phishing test set</span><span lang="fr">Faux positifs sur le jeu de test</span></dt>
+                <dd>0</dd>
+              </div>
+            </dl>
+          </div>
+
+          <figure class="map" id="map" data-intro>
+            <div class="map__stage" id="map-stage">
+              <canvas class="map__canvas" id="map-canvas" aria-hidden="true"></canvas>
+              <div class="map__flat" id="map-flat"></div>
+              <div class="map__labels" id="map-labels"></div>
+              <div class="map__fx" id="map-fx" aria-hidden="true"></div>
+
+              <div class="map__tools">
+                <button class="map__btn" id="map-clear" type="button" hidden>
+                  <svg class="icon icon--sm" aria-hidden="true"><use href="#i-sweep" /></svg>
+                  <span lang="en">Clear</span><span lang="fr">Vider</span>
+                </button>
+                <button class="map__btn map__btn--icon map__pause" id="map-pause" type="button" aria-pressed="false">
+                  <svg class="icon icon--sm map__pause-on" aria-hidden="true"><use href="#i-pause" /></svg>
+                  <svg class="icon icon--sm map__pause-off" aria-hidden="true"><use href="#i-play" /></svg>
+                  <span class="sr-only" lang="en">Pause the map</span><span class="sr-only" lang="fr">Mettre la carte en pause</span>
+                </button>
+              </div>
+
+              <p class="map__hint" id="map-hint" aria-hidden="true">
+                <span lang="en"><kbd><span class="map__hint-click">Click</span><span class="map__hint-tap">Tap</span></kbd> a zone to send a packet<span class="map__hint-more"> <i>·</i> pfSense decides</span></span>
+                <span lang="fr"><kbd><span class="map__hint-click">Cliquez</span><span class="map__hint-tap">Touchez</span></kbd> une zone pour envoyer un paquet<span class="map__hint-more"> <i>·</i> pfSense décide</span></span>
+              </p>
+            </div>
+
+            <div class="map__console">
+              <span class="map__consolename"><span lang="en">pfSense <br />filter log</span><span lang="fr">Journal <br />pfSense</span></span>
+              <div class="map__consolebody">
+                <div class="map__cmd" id="map-cmd" role="group">
+                  <span class="map__prompt" aria-hidden="true"><i>$</i> send --to</span>
+                  <button type="button" data-zone="lan">
+                    <span aria-hidden="true">lan</span>
+                    <span class="sr-only" lang="en">Send a packet to the corporate LAN</span><span class="sr-only" lang="fr">Envoyer un paquet au LAN d’entreprise</span>
+                  </button>
+                  <button type="button" data-zone="dmz">
+                    <span aria-hidden="true">dmz</span>
+                    <span class="sr-only" lang="en">Send a packet to the DMZ</span><span class="sr-only" lang="fr">Envoyer un paquet à la DMZ</span>
+                  </button>
+                  <button type="button" data-zone="siem">
+                    <span aria-hidden="true">siem</span>
+                    <span class="sr-only" lang="en">Send a packet to the SIEM zone</span><span class="sr-only" lang="fr">Envoyer un paquet à la zone SIEM</span>
+                  </button>
+                  <button type="button" data-zone="any">
+                    <span aria-hidden="true">any</span>
+                    <span class="sr-only" lang="en">Send a packet to a random zone</span><span class="sr-only" lang="fr">Envoyer un paquet à une zone au hasard</span>
+                  </button>
+                  <span class="map__caret" aria-hidden="true"></span>
+                </div>
+                <div class="map__log" id="map-log" role="log" aria-live="polite"></div>
+              </div>
+            </div>
+
+            <figcaption class="map__key">
+              <span class="label"><span lang="en">Key</span><span lang="fr">Légende</span></span>
+              <ul id="map-key"></ul>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ───────────── Wire feed ───────────── -->
+      <div class="wire" aria-hidden="true">
+        <div class="wire__track" id="wire-track"></div>
+      </div>
+
+      <!-- ═════════════ 01 ABOUT ═════════════ -->
+      <section class="section about" id="about" aria-labelledby="about-title">
+        <div class="wrap">
+          <header class="sechead" data-reveal>
+            <p class="sechead__meta">
+              <span class="sechead__num">01</span>
+              <span><span lang="en">Subject profile</span><span lang="fr">Profil</span></span>
+              <span class="sechead__right"><span lang="en">Page 1 of 5</span><span lang="fr">Page 1 de 5</span></span>
+            </p>
+            <h2 id="about-title">
+              <span lang="en">Assume breach. <em>Then prove the alarm works.</em></span>
+              <span lang="fr">Présumer la compromission. <em>Puis prouver que l’alarme sonne.</em></span>
+            </h2>
+          </header>
+
+          <div class="about__grid">
+            <div class="about__idcol" data-reveal>
+              <div class="idcard sheet" data-tilt>
+                <header class="idcard__head">
+                  <span><span lang="en">Personnel record</span><span lang="fr">Dossier du personnel</span></span>
+                  <span><span lang="en">Blue team</span><span lang="fr">Équipe bleue</span></span>
+                </header>
+                <div class="idcard__body">
+                  <div class="idcard__photo" aria-hidden="true">
+                    <b>MH</b>
+                    <i><span lang="en">No photo on file</span><span lang="fr">Aucune photo au dossier</span></i>
+                  </div>
+                  <dl class="kv idcard__fields">
+                    <dt><span lang="en">Name</span><span lang="fr">Nom</span></dt>
+                    <dd class="idcard__name">Makan Homayoun</dd>
+                    <dt><span lang="en">Seeking</span><span lang="fr">Recherche</span></dt>
+                    <dd>
+                      <span lang="en">Cybersecurity internship <span class="idcard__soft">(blue team / SOC)</span></span>
+                      <span lang="fr">Stage en cybersécurité <span class="idcard__soft">(équipe bleue / SOC)</span></span>
+                    </dd>
+                    <dt><span lang="en">Studying</span><span lang="fr">Études</span></dt>
+                    <dd>
+                      <span lang="en">DEC, Computer Science Technology<br />John Abbott College</span>
+                      <span lang="fr">DEC, Techniques de l’informatique<br />Cégep John Abbott</span>
+                    </dd>
+                    <dt><span lang="en">Based</span><span lang="fr">Ville</span></dt>
+                    <dd>Montréal, QC</dd>
+                    <dt><span lang="en">Speaks</span><span lang="fr">Langues</span></dt>
+                    <dd><span lang="en">English · French · Persian</span><span lang="fr">Anglais · français · farsi</span></dd>
+                  </dl>
+                </div>
+                <footer class="idcard__foot">
+                  <span>MITRE ATT&amp;CK</span>
+                  <span>T1046 · T1110 · T1566</span>
+                </footer>
+                <div class="idcard__scan" aria-hidden="true"></div>
+              </div>
+            </div>
+
+            <div class="about__text">
+              <div class="prose about__prose" data-reveal>
+                <p lang="en">
+                  I'm a Computer Science Technology student at John Abbott College, focused on the blue team. I build
+                  detections, then <span class="redact">attack my own lab</span> to prove they fire.
+                </p>
+                <p lang="en">
+                  I assume someone is always trying to beat the system, and design it so the odds never tilt their way.
+                  I like knowing exactly how a system breaks, because that's
+                  <span class="redact" style="--i: 1">the only honest way to protect it</span>.
+                </p>
+                <p lang="fr">
+                  Je suis étudiant en Techniques de l’informatique au Cégep John Abbott, et je me concentre sur l’équipe
+                  bleue. Je conçois des détections, puis <span class="redact">j’attaque mon propre laboratoire</span>
+                  pour prouver qu’elles se déclenchent.
+                </p>
+                <p lang="fr">
+                  Je pars du principe que quelqu’un essaie toujours de déjouer le système, et je le conçois pour que les
+                  chances ne penchent jamais de son côté. J’aime savoir exactement comment un système cède, parce que
+                  c’est <span class="redact" style="--i: 1">la seule façon honnête de le protéger</span>.
+                </p>
+              </div>
+
+              <h3 class="about__rulestitle label" data-reveal><span lang="en">Operating principles</span><span lang="fr">Principes de travail</span></h3>
+              <ol class="rules" data-reveal-group>
+                <li class="rule">
+                  <span class="rule__num">I</span>
+                  <h4><span lang="en">Default deny.</span><span lang="fr">Refus par défaut.</span></h4>
+                  <p>
+                    <span lang="en">Every allowed flow in my lab has a written reason. Everything else gets dropped.</span>
+                    <span lang="fr">Chaque flux autorisé dans mon laboratoire a une justification écrite. Tout le reste est bloqué.</span>
+                  </p>
+                </li>
+                <li class="rule">
+                  <span class="rule__num">II</span>
+                  <h4><span lang="en">Prove the detection.</span><span lang="fr">Prouver la détection.</span></h4>
+                  <p>
+                    <span lang="en">A rule isn't done until I've attacked my own lab and watched it fire.</span>
+                    <span lang="fr">Une règle n’est pas terminée tant que je n’ai pas attaqué mon laboratoire et vu l’alerte se déclencher.</span>
+                  </p>
+                </li>
+                <li class="rule">
+                  <span class="rule__num">III</span>
+                  <h4><span lang="en">Show the evidence.</span><span lang="fr">Montrer les preuves.</span></h4>
+                  <p>
+                    <span lang="en">Every verdict my tools reach lists the evidence behind it. No black boxes.</span>
+                    <span lang="fr">Chaque verdict de mes outils énumère les preuves qui le justifient. Aucune boîte noire.</span>
+                  </p>
+                </li>
+                <li class="rule">
+                  <span class="rule__num">IV</span>
+                  <h4><span lang="en">Test before trust.</span><span lang="fr">Tester avant de faire confiance.</span></h4>
+                  <p>
+                    <span lang="en">36 unit tests cover the triage pipeline, from extraction to XSS-safe reports.</span>
+                    <span lang="fr">36 tests unitaires couvrent le pipeline de triage, de l’extraction jusqu’aux rapports protégés contre le XSS.</span>
+                  </p>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════════ 02 EXPERIENCE ═════════════ -->
+      <section class="section experience" id="experience" aria-labelledby="experience-title">
+        <div class="wrap">
+          <header class="sechead" data-reveal>
+            <p class="sechead__meta">
+              <span class="sechead__num">02</span>
+              <span><span lang="en">Experience and education</span><span lang="fr">Parcours et formation</span></span>
+              <span class="sechead__right"><span lang="en">Page 2 of 5</span><span lang="fr">Page 2 de 5</span></span>
+            </p>
+            <h2 id="experience-title">
+              <span lang="en">The <em>record.</em></span>
+              <span lang="fr">Le <em>parcours.</em></span>
+            </h2>
+            <p class="lede">
+              <span lang="en">Work, school and competitions, newest first. What each one involved is in the CV.</span>
+              <span lang="fr">Travail, études et compétitions, du plus récent au plus ancien. Le détail de chacun se trouve dans le CV.</span>
+            </p>
+          </header>
+
+          <ol class="tl" data-reveal-group>
+            <li class="tl__item">
+              <p class="tl__date">2026</p>
+              <span class="tl__node" aria-hidden="true"></span>
+              <div class="tl__what">
+                <h3 class="tl__title"><span lang="en">Capture the Flag competitions</span><span lang="fr">Compétitions Capture the Flag (CTF)</span></h3>
+                <p class="tl__org"><span lang="en">@Hack and Vanier Hacks</span><span lang="fr">@Hack et Vanier Hacks</span></p>
+              </div>
+              <span class="tl__tag tl__tag--comp"><span lang="en">Competition</span><span lang="fr">Compétition</span></span>
+            </li>
+            <li class="tl__item">
+              <p class="tl__date">2026</p>
+              <span class="tl__node" aria-hidden="true"></span>
+              <div class="tl__what">
+                <h3 class="tl__title"><span lang="en">JACHacks Hackathon</span><span lang="fr">Marathon de programmation JACHacks</span></h3>
+                <p class="tl__org"><span lang="en">John Abbott College</span><span lang="fr">Cégep John Abbott</span></p>
+              </div>
+              <span class="tl__tag tl__tag--comp">Hackathon</span>
+            </li>
+            <li class="tl__item">
+              <p class="tl__date"><span lang="en">Apr 2025</span><span lang="fr">Avr. 2025</span></p>
+              <span class="tl__node" aria-hidden="true"></span>
+              <div class="tl__what">
+                <h3 class="tl__title"><span lang="en">Election Poll Worker</span><span lang="fr">Préposé au scrutin</span></h3>
+                <p class="tl__org"><span lang="en">Elections Canada</span><span lang="fr">Élections Canada</span> <span>Pincourt, QC</span></p>
+              </div>
+              <span class="tl__tag tl__tag--work"><span lang="en">Work</span><span lang="fr">Emploi</span></span>
+            </li>
+            <li class="tl__item">
+              <p class="tl__date"><span lang="en">Aug 2024 – Present</span><span lang="fr">Août 2024 – présent</span></p>
+              <span class="tl__node" aria-hidden="true"></span>
+              <div class="tl__what">
+                <h3 class="tl__title"><span lang="en">DEC, Computer Science Technology</span><span lang="fr">DEC, Techniques de l’informatique</span></h3>
+                <p class="tl__org"><span lang="en">John Abbott College</span><span lang="fr">Cégep John Abbott</span> <span>Sainte-Anne-de-Bellevue, QC</span></p>
+              </div>
+              <span class="tl__tag tl__tag--edu"><span lang="en">Education</span><span lang="fr">Formation</span></span>
+            </li>
+            <li class="tl__item">
+              <p class="tl__date"><span lang="en">Feb 2022 – Jan 2023</span><span lang="fr">Févr. 2022 – janv. 2023</span></p>
+              <span class="tl__node" aria-hidden="true"></span>
+              <div class="tl__what">
+                <h3 class="tl__title"><span lang="en">Cashier</span><span lang="fr">Caissier</span></h3>
+                <p class="tl__org">Metro <span>Mont-Royal, QC</span></p>
+              </div>
+              <span class="tl__tag tl__tag--work"><span lang="en">Work</span><span lang="fr">Emploi</span></span>
+            </li>
+            <li class="tl__item">
+              <p class="tl__date"><span lang="en">Sep 2019 – June 2024</span><span lang="fr">Sept. 2019 – juin 2024</span></p>
+              <span class="tl__node" aria-hidden="true"></span>
+              <div class="tl__what">
+                <h3 class="tl__title"><span lang="en">Secondary School Diploma</span><span lang="fr">Diplôme d’études secondaires</span></h3>
+                <p class="tl__org"><span lang="en">Mont-Royal Secondary School</span><span lang="fr">École secondaire Mont-Royal</span> <span>Mont-Royal, QC</span></p>
+              </div>
+              <span class="tl__tag tl__tag--edu"><span lang="en">Education</span><span lang="fr">Formation</span></span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ═════════════ 03 PROJECTS ═════════════ -->
+      <section class="section projects" id="projects" aria-labelledby="projects-title">
+        <div class="wrap">
+          <header class="sechead" data-reveal>
+            <p class="sechead__meta">
+              <span class="sechead__num">03</span>
+              <span><span lang="en">Projects</span><span lang="fr">Projets</span></span>
+              <span class="sechead__right"><span lang="en">Page 3 of 5</span><span lang="fr">Page 3 de 5</span></span>
+            </p>
+            <h2 id="projects-title">
+              <span lang="en">Two projects, <em>with the evidence.</em></span>
+              <span lang="fr">Deux projets, <em>preuves à l’appui.</em></span>
+            </h2>
+            <p class="lede">
+              <span lang="en">Each one is summarised here. The full report, with the interactive replays, is one click away.</span>
+              <span lang="fr">Chacun est résumé ici. Le rapport complet, avec les reconstitutions interactives, est à un clic.</span>
+            </p>
+          </header>
+
+          <div class="projects__list">
+            <!-- ─── Project 1 ─── -->
+            <article class="cover sheet" id="project-1" data-reveal>
+              <div class="cover__band">
+                <span><span lang="en">Project 1</span><span lang="fr">Projet 1</span></span>
+                <span class="cover__type"><span lang="en">Incident report <i>·</i> lab exercise</span><span lang="fr">Rapport d’incident <i>·</i> exercice en laboratoire</span></span>
+                <span class="cover__tlp">TLP:CLEAR</span>
+              </div>
+              <div class="cover__body">
+                <div class="cover__lead">
+                  <h3 class="cover__title"><a href="./siem-home-lab.html"><span lang="en">SIEM Home Lab</span><span lang="fr">Laboratoire SIEM</span></a></h3>
+                  <p class="lede">
+                    <span lang="en">A segmented network, a SIEM, and three attacks it had to catch.</span>
+                    <span lang="fr">Un réseau segmenté, un SIEM, et trois attaques qu’il devait détecter.</span>
+                  </p>
+                  <p class="cover__desc" lang="en">
+                    A self-built SOC lab. pfSense splits a VirtualBox network into a corporate LAN, a DMZ and a SIEM
+                    subnet, and Wazuh watches a Windows domain controller and a Linux endpoint. Then I attack it from Kali
+                    and check that <span class="redact">every move gets caught</span>.
+                  </p>
+                  <p class="cover__desc" lang="fr">
+                    Un laboratoire SOC que j’ai bâti moi-même. pfSense divise un réseau VirtualBox en un LAN d’entreprise,
+                    une DMZ et un sous-réseau SIEM, et Wazuh surveille un contrôleur de domaine Windows et un poste Linux.
+                    Ensuite, je l’attaque depuis Kali et je vérifie que <span class="redact">chaque geste est détecté</span>.
+                  </p>
+                  <div class="cover__actions">
+                    <a class="btn btn--ink" href="./siem-home-lab.html">
+                      <span lang="en">Open the full report</span><span lang="fr">Ouvrir le rapport complet</span>
+                      <svg class="icon" aria-hidden="true"><use href="#i-arrow-right" /></svg>
+                    </a>
+                    <a class="btn" href="https://github.com/MakanH/soc-siem-homelab" target="_blank" rel="noopener">
+                      <svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>
+                      <span>soc-siem-homelab</span>
+                      <svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-ur" /></svg>
+                    </a>
+                  </div>
+                </div>
+
+                <dl class="kv cover__meta">
+                  <dt><span lang="en">Period</span><span lang="fr">Période</span></dt>
+                  <dd><span lang="en">June – July 2026</span><span lang="fr">Juin – juill. 2026</span></dd>
+                  <dt><span lang="en">Environment</span><span lang="fr">Milieu</span></dt>
+                  <dd><span lang="en">VirtualBox on a Kali Linux host, domain <code>lab.local</code></span><span lang="fr">VirtualBox sur un hôte Kali Linux, domaine <code>lab.local</code></span></dd>
+                  <dt><span lang="en">Stack</span><span lang="fr">Outils</span></dt>
+                  <dd>
+                    <ul class="tags">
+                      <li>Wazuh 4.14</li>
+                      <li>pfSense</li>
+                      <li>Active Directory</li>
+                      <li>Sysmon</li>
+                      <li>C# / .NET 8</li>
+                      <li>VirtualBox</li>
+                    </ul>
+                  </dd>
+                  <dt>ATT&amp;CK</dt>
+                  <dd>
+                    <code>T1046</code> <span lang="en">Discovery</span><span lang="fr">Découverte</span>
+                    <span class="cover__sep">·</span>
+                    <code>T1110</code> <span lang="en">Credential access</span><span lang="fr">Accès aux identifiants</span>
+                  </dd>
+                  <dt><span lang="en">Outcome</span><span lang="fr">Résultat</span></dt>
+                  <dd><span lang="en"><strong>3 of 3</strong> simulated attacks detected</span><span lang="fr"><strong>3 sur 3</strong> attaques simulées détectées</span></dd>
+                </dl>
+
+                <span class="stamp stamp--green cover__stamp" data-stamp aria-hidden="true">
+                  <span lang="en">Detected</span><span lang="fr">Détecté</span>
+                  <small><span lang="en">3 of 3 attacks</span><span lang="fr">3 attaques sur 3</span></small>
+                </span>
+              </div>
+            </article>
+
+            <!-- ─── Project 2 ─── -->
+            <article class="cover sheet" id="project-2" data-reveal>
+              <div class="cover__band">
+                <span><span lang="en">Project 2</span><span lang="fr">Projet 2</span></span>
+                <span class="cover__type"><span lang="en">Tooling report <i>·</i> phishing triage</span><span lang="fr">Rapport d’outil <i>·</i> triage d’hameçonnage</span></span>
+                <span class="cover__tlp">TLP:CLEAR</span>
+              </div>
+              <div class="cover__body">
+                <div class="cover__lead">
+                  <h3 class="cover__title"><a href="./threat-triage.html"><span lang="en">Automated Threat Triage</span><span lang="fr">Triage automatisé des menaces</span></a></h3>
+                  <p class="lede">
+                    <span lang="en">A suspicious email goes in. A verdict comes out, with its reasons attached.</span>
+                    <span lang="fr">Un courriel suspect entre. Un verdict en sort, avec ses raisons.</span>
+                  </p>
+                  <p class="cover__desc" lang="en">
+                    A SOAR-inspired Python pipeline for the first pass on a suspicious email. It pulls the indicators out
+                    of a raw <code>.eml</code>, checks them against VirusTotal and AbuseIPDB, and scores the email from 0
+                    to 100. <span class="redact">Every point comes with a reason</span>, so an analyst sees the evidence
+                    and not just the total.
+                  </p>
+                  <p class="cover__desc" lang="fr">
+                    Un pipeline Python inspiré du SOAR pour le premier tri d’un courriel suspect. Il extrait les
+                    indicateurs d’un fichier <code>.eml</code> brut, les vérifie auprès de VirusTotal et d’AbuseIPDB, puis
+                    donne au courriel une note de 0 à 100. <span class="redact">Chaque point est justifié</span>, pour que
+                    l’analyste voie les preuves et pas seulement le total.
+                  </p>
+                  <div class="cover__actions">
+                    <a class="btn btn--ink" href="./threat-triage.html">
+                      <span lang="en">Open the full report</span><span lang="fr">Ouvrir le rapport complet</span>
+                      <svg class="icon" aria-hidden="true"><use href="#i-arrow-right" /></svg>
+                    </a>
+                    <a class="btn" href="https://github.com/MakanH/phishing-triage-pipeline" target="_blank" rel="noopener">
+                      <svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>
+                      <span>phishing-triage-pipeline</span>
+                      <svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-ur" /></svg>
+                    </a>
+                  </div>
+                </div>
+
+                <dl class="kv cover__meta">
+                  <dt><span lang="en">Period</span><span lang="fr">Période</span></dt>
+                  <dd><span lang="en">August – September 2026</span><span lang="fr">Août – sept. 2026</span></dd>
+                  <dt><span lang="en">Input</span><span lang="fr">Entrée</span></dt>
+                  <dd><span lang="en">Raw <code>.eml</code> files</span><span lang="fr">Fichiers <code>.eml</code> bruts</span></dd>
+                  <dt><span lang="en">Stack</span><span lang="fr">Outils</span></dt>
+                  <dd>
+                    <ul class="tags">
+                      <li>Python 3</li>
+                      <li>VirusTotal API</li>
+                      <li>AbuseIPDB API</li>
+                      <li>pytest</li>
+                      <li>Jinja2</li>
+                    </ul>
+                  </dd>
+                  <dt>ATT&amp;CK</dt>
+                  <dd>
+                    <code>T1566</code> <span lang="en">Phishing</span><span lang="fr">Hameçonnage</span>
+                    <span class="cover__sep">·</span>
+                    <code>T1204</code> <span lang="en">User execution</span><span lang="fr">Exécution par l’utilisateur</span>
+                  </dd>
+                  <dt><span lang="en">Outcome</span><span lang="fr">Résultat</span></dt>
+                  <dd>
+                    <span lang="en"><strong>3 of 3</strong> phishing samples flagged, <strong>0</strong> false positives</span>
+                    <span lang="fr"><strong>3 sur 3</strong> échantillons d’hameçonnage signalés, <strong>0</strong> faux positif</span>
+                  </dd>
+                </dl>
+
+                <span class="stamp stamp--blue cover__stamp" data-stamp aria-hidden="true">
+                  <span lang="en">Tested</span><span lang="fr">Testé</span>
+                  <small><span lang="en">36 unit tests</span><span lang="fr">36 tests unitaires</span></small>
+                </span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════════ 04 SKILLS ═════════════ -->
+      <section class="section skills" id="skills" aria-labelledby="skills-title">
+        <div class="wrap">
+          <header class="sechead" data-reveal>
+            <p class="sechead__meta">
+              <span class="sechead__num">04</span>
+              <span><span lang="en">Capability inventory</span><span lang="fr">Inventaire des compétences</span></span>
+              <span class="sechead__right"><span lang="en">Page 4 of 5</span><span lang="fr">Page 4 de 5</span></span>
+            </p>
+            <h2 id="skills-title">
+              <span lang="en">The <em>toolkit.</em></span>
+              <span lang="fr">La <em>trousse à outils.</em></span>
+            </h2>
+            <p class="lede">
+              <span lang="en">Sixteen tools, grouped by what they are for.</span>
+              <span lang="fr">Seize outils, regroupés selon leur usage.</span>
+            </p>
+          </header>
+
+          <div class="kit" data-reveal-group>
+            <section class="kit__group sheet" aria-labelledby="kit-security">
+              <header class="kit__head">
+                <h3 id="kit-security"><span lang="en">Security tools</span><span lang="fr">Outils de sécurité</span></h3>
+                <span class="label">7</span>
+              </header>
+              <ul class="kit__list">
+                <li><b>Wazuh</b><span>SIEM</span></li>
+                <li><b>Microsoft Sentinel</b><span><span lang="en">Cloud SIEM</span><span lang="fr">SIEM infonuagique</span></span></li>
+                <li><b>pfSense</b><span><span lang="en">Firewall</span><span lang="fr">Pare-feu</span></span></li>
+                <li><b>Wireshark</b><span><span lang="en">Packets</span><span lang="fr">Paquets</span></span></li>
+                <li><b>Nmap</b><span><span lang="en">Recon</span><span lang="fr">Reconnaissance</span></span></li>
+                <li><b>Burp Suite</b><span>Web</span></li>
+                <li><b>MITRE ATT&amp;CK</b><span><span lang="en">Framework</span><span lang="fr">Cadre de référence</span></span></li>
+              </ul>
+            </section>
+
+            <section class="kit__group sheet" aria-labelledby="kit-systems">
+              <header class="kit__head">
+                <h3 id="kit-systems"><span lang="en">Systems</span><span lang="fr">Systèmes</span></h3>
+                <span class="label">4</span>
+              </header>
+              <ul class="kit__list">
+                <li><b>Kali Linux</b><span><span lang="en">Attacker</span><span lang="fr">Attaquant</span></span></li>
+                <li><b>Windows Server + AD</b><span><span lang="en">Domain</span><span lang="fr">Domaine</span></span></li>
+                <li><b>Ubuntu</b><span><span lang="en">Server</span><span lang="fr">Serveur</span></span></li>
+                <li><b>VirtualBox</b><span><span lang="en">Hypervisor</span><span lang="fr">Hyperviseur</span></span></li>
+              </ul>
+            </section>
+
+            <section class="kit__group sheet" aria-labelledby="kit-code">
+              <header class="kit__head">
+                <h3 id="kit-code">Code</h3>
+                <span class="label">5</span>
+              </header>
+              <ul class="kit__list">
+                <li><b>Python</b><span><span lang="en">Automation</span><span lang="fr">Automatisation</span></span></li>
+                <li><b>C#</b><span>.NET 8</span></li>
+                <li><b>SQL</b><span><span lang="en">Data</span><span lang="fr">Données</span></span></li>
+                <li><b>Bash</b><span>Shell</span></li>
+                <li><b>KQL</b><span><span lang="en">Queries</span><span lang="fr">Requêtes</span></span></li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════════ 05 CV ═════════════ -->
+      <section class="section cvsec" id="cv" aria-labelledby="cv-title">
+        <div class="wrap">
+          <header class="sechead" data-reveal>
+            <p class="sechead__meta">
+              <span class="sechead__num">05</span>
+              <span>Curriculum vitae</span>
+              <span class="sechead__right"><span lang="en">Page 5 of 5</span><span lang="fr">Page 5 de 5</span></span>
+            </p>
+          </header>
+
+          <div class="cvsec__grid">
+            <div class="cvsec__text" data-reveal>
+              <h2 id="cv-title">
+                <span lang="en">The full record <em>is in the CV.</em></span>
+                <span lang="fr">Le dossier complet <em>est dans le CV.</em></span>
+              </h2>
+              <p class="lede">
+                <span lang="en">One page: education, experience, projects, skills, and how to reach me.</span>
+                <span lang="fr">Une page : formation, expérience, projets, compétences et coordonnées.</span>
+              </p>
+              <div class="cvsec__actions">
+                <a class="btn btn--ink btn--lg" lang="en" href="./cv/Makan-Homayoun-CV.pdf" download="Makan-Homayoun-CV.pdf">
+                  <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+                  <span>Download the CV</span>
+                </a>
+                <a class="btn btn--ink btn--lg" lang="fr" href="./cv/Makan-Homayoun-CV-FR.pdf" download="Makan-Homayoun-CV-FR.pdf">
+                  <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+                  <span>Télécharger le CV</span>
+                </a>
+                <p class="cvsec__meta"><span lang="en">PDF · 1 page · English</span><span lang="fr">PDF · 1 page · français</span></p>
+              </div>
+            </div>
+
+            <div class="cvsec__doc" data-reveal>
+              <a class="cvdoc sheet" lang="en" href="./cv/Makan-Homayoun-CV.pdf" download="Makan-Homayoun-CV.pdf" data-tilt>
+                <span class="cvdoc__head"><b>Makan Homayoun</b><i>Curriculum vitae</i></span>
+                <span class="cvdoc__rows" aria-hidden="true">
+                  <span class="cvdoc__h">Education</span><span class="cvdoc__bar" style="--w: 88%"></span><span class="cvdoc__bar" style="--w: 61%"></span>
+                  <span class="cvdoc__h">Skills</span><span class="cvdoc__bar" style="--w: 94%"></span><span class="cvdoc__bar" style="--w: 72%"></span>
+                  <span class="cvdoc__h">Experience</span><span class="cvdoc__bar" style="--w: 83%"></span><span class="cvdoc__bar" style="--w: 90%"></span><span class="cvdoc__bar" style="--w: 54%"></span>
+                  <span class="cvdoc__h">Projects</span><span class="cvdoc__bar" style="--w: 91%"></span><span class="cvdoc__bar" style="--w: 77%"></span><span class="cvdoc__bar" style="--w: 86%"></span>
+                </span>
+                <span class="cvdoc__foot"><svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>Download · PDF</span>
+                <span class="stamp stamp--green cvdoc__stamp" aria-hidden="true">TLP:CLEAR</span>
+              </a>
+              <a class="cvdoc sheet" lang="fr" href="./cv/Makan-Homayoun-CV-FR.pdf" download="Makan-Homayoun-CV-FR.pdf" data-tilt>
+                <span class="cvdoc__head"><b>Makan Homayoun</b><i>Curriculum vitae</i></span>
+                <span class="cvdoc__rows" aria-hidden="true">
+                  <span class="cvdoc__h">Formation</span><span class="cvdoc__bar" style="--w: 88%"></span><span class="cvdoc__bar" style="--w: 61%"></span>
+                  <span class="cvdoc__h">Compétences</span><span class="cvdoc__bar" style="--w: 94%"></span><span class="cvdoc__bar" style="--w: 72%"></span>
+                  <span class="cvdoc__h">Expérience</span><span class="cvdoc__bar" style="--w: 83%"></span><span class="cvdoc__bar" style="--w: 90%"></span><span class="cvdoc__bar" style="--w: 54%"></span>
+                  <span class="cvdoc__h">Projets</span><span class="cvdoc__bar" style="--w: 91%"></span><span class="cvdoc__bar" style="--w: 77%"></span><span class="cvdoc__bar" style="--w: 86%"></span>
+                </span>
+                <span class="cvdoc__foot"><svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>Télécharger · PDF</span>
+                <span class="stamp stamp--green cvdoc__stamp" aria-hidden="true">TLP:CLEAR</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <p class="footer__end" aria-hidden="true"><span><span lang="en">End of file</span><span lang="fr">Fin du dossier</span></span></p>
+        <div class="footer__row">
+          <p>© 2026 Makan Homayoun · Montréal, QC</p>
+          <ul class="footer__links">
+            <li>
+              <a href="mailto:makan.h07@gmail.com"><svg class="icon" aria-hidden="true"><use href="#i-mail" /></svg>makan.h07@gmail.com</a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/makan-homayoun" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-linkedin" /></svg>LinkedIn</a>
+            </li>
+            <li>
+              <a href="https://github.com/MakanH" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>GitHub</a>
+            </li>
+          </ul>
+          <a class="footer__top" href="#top">
+            <span lang="en">Back to top</span><span lang="fr">Haut de page</span>
+            <svg class="icon icon--sm" aria-hidden="true" style="transform: rotate(180deg)"><use href="#i-arrow-down" /></svg>
+          </a>
+        </div>
+      </div>
+      <div class="tlp tlp--foot">
+        <div class="wrap tlp__row">
+          <span class="tlp__mark">TLP:CLEAR</span>
+          <span class="tlp__text"><span lang="en">Public release · no limit on disclosure</span><span lang="fr">Diffusion publique · aucune restriction</span></span>
+        </div>
+      </div>
+    </footer>
+
+    <noscript>
+      <style>
+        .map__stage,
+        .map__console {
+          display: none !important;
+        }
+      </style>
+    </noscript>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

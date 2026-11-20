@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en" data-title-en="Automated Threat Triage · Makan Homayoun" data-title-fr="Triage automatisé des menaces · Makan Homayoun">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Automated Threat Triage · Makan Homayoun</title>
+    <meta name="description" content="Project 2 of Makan Homayoun: a Python pipeline that extracts indicators from raw emails, enriches them with VirusTotal and AbuseIPDB, and scores them with an explainable model." />
+    <meta name="author" content="Makan Homayoun" />
+    <meta name="theme-color" content="#101317" />
+    <meta name="color-scheme" content="dark" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Automated Threat Triage · Makan Homayoun" />
+    <meta property="og:description" content="Project 2 of Makan Homayoun: a Python pipeline that extracts indicators from raw emails, enriches them with VirusTotal and AbuseIPDB, and scores them with an explainable model." />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="/src/styles/index.css" />
+
+    <script>
+      // Language before first paint: the visitor's saved choice, else the browser's language, else English.
+      // Entrance states only apply once scripting is known to work; if the app never starts, drop them.
+      (function () {
+        var root = document.documentElement;
+        var lang = null;
+        try {
+          lang = localStorage.getItem('casefile.lang');
+        } catch (error) {}
+        if (lang !== 'en' && lang !== 'fr') lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+        root.lang = lang;
+        if (lang === 'fr') document.title = root.getAttribute('data-title-fr') || document.title;
+        root.classList.add('js');
+        setTimeout(function () {
+          if (!window.__caseFileBooted) root.classList.remove('js');
+        }, 6000);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- ───────────── Icon sprite (referenced with <use href="#id">) ───────────── -->
+    <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+      <defs>
+        <symbol id="i-github" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+        </symbol>
+        <symbol id="i-linkedin" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+        </symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          </g>
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M12 15V3" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-ur" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7h10v10" />
+            <path d="M7 17 17 7" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-down" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14" />
+            <path d="m19 12-7 7-7-7" />
+          </g>
+        </symbol>
+        <symbol id="i-play" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M7 4.5v15l12-7.5-12-7.5Z" />
+        </symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </g>
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </g>
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </g>
+        </symbol>
+        <symbol id="i-expand" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h6v6" />
+            <path d="M9 21H3v-6" />
+            <path d="m21 3-7 7" />
+            <path d="m3 21 7-7" />
+          </g>
+        </symbol>
+        <symbol id="i-sweep" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            <path d="M3 21v-5h5" />
+          </g>
+        </symbol>
+      </defs>
+    </svg>
+
+    <a class="skip" href="#main"><span lang="en">Skip to content</span><span lang="fr">Aller au contenu</span></a>
+
+    <!-- ───────────── Classification banner ───────────── -->
+    <div class="tlp" id="top">
+      <div class="wrap tlp__row">
+        <span class="tlp__mark">TLP:CLEAR</span>
+        <span class="tlp__text"><span lang="en">Public release · no limit on disclosure</span><span lang="fr">Diffusion publique · aucune restriction</span></span>
+        <span class="tlp__clock" id="clock" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <!-- ───────────── Header ───────────── -->
+    <header class="bar" id="bar">
+      <div class="wrap bar__row">
+        <a class="bar__brand" href="./">
+          <span class="bar__mono" aria-hidden="true">MH</span>
+          <span class="bar__name">Makan Homayoun</span>
+        </a>
+
+        <nav class="bar__nav" id="nav">
+          <a href="./#about"><span class="bar__num">01</span><span lang="en">About</span><span lang="fr">À propos</span></a>
+          <a href="./#experience"><span class="bar__num">02</span><span lang="en">Experience</span><span lang="fr">Parcours</span></a>
+          <a href="./#projects" class="is-current" aria-current="true"><span class="bar__num">03</span><span lang="en">Projects</span><span lang="fr">Projets</span></a>
+          <a href="./#skills"><span class="bar__num">04</span><span lang="en">Skills</span><span lang="fr">Compétences</span></a>
+        </nav>
+
+        <div class="bar__tools">
+          <div class="lang" role="group" aria-label="Language · Langue">
+            <button type="button" data-set-lang="en" aria-pressed="true" aria-label="English">EN</button>
+            <button type="button" data-set-lang="fr" aria-pressed="false" aria-label="Français">FR</button>
+          </div>
+          <button class="iconbtn bar__menu" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">
+            <svg class="icon iconbtn__open" aria-hidden="true"><use href="#i-menu" /></svg>
+            <svg class="icon iconbtn__shut" aria-hidden="true"><use href="#i-close" /></svg>
+            <span class="sr-only">Menu</span>
+          </button>
+        </div>
+      </div>
+      <div class="bar__progress" aria-hidden="true"><span id="progress"></span></div>
+    </header>
+
+    <main id="main">
+      <div class="wrap pagehead">
+        <nav class="crumb">
+          <a href="./#projects"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-right" /></svg><span lang="en">All projects</span><span lang="fr">Tous les projets</span></a>
+          <span aria-hidden="true">/</span>
+          <span><span lang="en">Project 2</span><span lang="fr">Projet 2</span></span>
+        </nav>
+
+        <article class="cover sheet" data-reveal>
+          <div class="cover__band">
+            <span><span lang="en">Project 2</span><span lang="fr">Projet 2</span></span>
+            <span class="cover__type"><span lang="en">Tooling report <i>·</i> phishing triage</span><span lang="fr">Rapport d’outil <i>·</i> triage d’hameçonnage</span></span>
+            <span class="cover__tlp">TLP:CLEAR</span>
+          </div>
+          <div class="cover__body">
+            <div class="cover__lead">
+              <h1 class="cover__title"><span lang="en">Automated Threat Triage</span><span lang="fr">Triage automatisé des menaces</span></h1>
+              <p class="lede">
+                <span lang="en">A suspicious email goes in. A verdict comes out, with its reasons attached.</span>
+                <span lang="fr">Un courriel suspect entre. Un verdict en sort, avec ses raisons.</span>
+              </p>
+              <p class="cover__desc" lang="en">
+                A SOAR-inspired Python pipeline for the first pass on a suspicious email. It pulls the indicators out of a
+                raw <code>.eml</code>, checks them against VirusTotal and AbuseIPDB, and scores the email from 0 to 100.
+                <span class="redact">Every point comes with a reason</span>, so an analyst sees the evidence and not just
+                the total.
+              </p>
+              <p class="cover__desc" lang="fr">
+                Un pipeline Python inspiré du SOAR pour le premier tri d’un courriel suspect. Il extrait les indicateurs
+                d’un fichier <code>.eml</code> brut, les vérifie auprès de VirusTotal et d’AbuseIPDB, puis donne au
+                courriel une note de 0 à 100. <span class="redact">Chaque point est justifié</span>, pour que l’analyste
+                voie les preuves et pas seulement le total.
+              </p>
+              <div class="cover__actions">
+                <a class="btn" href="https://github.com/MakanH/phishing-triage-pipeline" target="_blank" rel="noopener">
+                  <svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>
+                  <span>phishing-triage-pipeline</span>
+                  <svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-ur" /></svg>
+                </a>
+              </div>
+            </div>
+
+            <dl class="kv cover__meta">
+              <dt><span lang="en">Period</span><span lang="fr">Période</span></dt>
+              <dd><span lang="en">August – September 2026</span><span lang="fr">Août – sept. 2026</span></dd>
+              <dt><span lang="en">Input</span><span lang="fr">Entrée</span></dt>
+              <dd><span lang="en">Raw <code>.eml</code> files</span><span lang="fr">Fichiers <code>.eml</code> bruts</span></dd>
+              <dt><span lang="en">Stack</span><span lang="fr">Outils</span></dt>
+              <dd>
+                <ul class="tags">
+                  <li>Python 3</li>
+                  <li>VirusTotal API</li>
+                  <li>AbuseIPDB API</li>
+                  <li>pytest</li>
+                  <li>Jinja2</li>
+                </ul>
+              </dd>
+              <dt>ATT&amp;CK</dt>
+              <dd>
+                <code>T1566</code> <span lang="en">Phishing</span><span lang="fr">Hameçonnage</span>
+                <span class="cover__sep">·</span>
+                <code>T1204</code> <span lang="en">User execution</span><span lang="fr">Exécution par l’utilisateur</span>
+              </dd>
+              <dt><span lang="en">Outcome</span><span lang="fr">Résultat</span></dt>
+              <dd>
+                <span lang="en"><strong>3 of 3</strong> phishing samples flagged, <strong>0</strong> false positives</span>
+                <span lang="fr"><strong>3 sur 3</strong> échantillons d’hameçonnage signalés, <strong>0</strong> faux positif</span>
+              </dd>
+            </dl>
+
+            <span class="stamp stamp--blue cover__stamp" data-stamp aria-hidden="true">
+              <span lang="en">Tested</span><span lang="fr">Testé</span>
+              <small><span lang="en">36 unit tests</span><span lang="fr">36 tests unitaires</span></small>
+            </span>
+          </div>
+        </article>
+      </div>
+
+      <div class="wrap">
+        <div class="case__body">
+          <nav class="toc" data-toc>
+            <p class="label"><span lang="en">Contents</span><span lang="fr">Sommaire</span></p>
+            <ol>
+              <li><a href="#summary"><span class="toc__n">1.0</span><span lang="en">Summary</span><span lang="fr">Résumé</span></a></li>
+              <li><a href="#method"><span class="toc__n">2.0</span><span lang="en">Method</span><span lang="fr">Méthode</span></a></li>
+              <li><a href="#timeline"><span class="toc__n">3.0</span><span lang="en">Timeline</span><span lang="fr">Déroulement</span></a></li>
+              <li><a href="#evidence"><span class="toc__n">4.0</span><span lang="en">Evidence</span><span lang="fr">Preuves</span></a></li>
+              <li><a href="#terminal"><span class="toc__n">5.0</span><span lang="en">Terminal</span><span lang="fr">Terminal</span></a></li>
+              <li><a href="#tests"><span class="toc__n">6.0</span><span lang="en">Tests</span><span lang="fr">Tests</span></a></li>
+              <li><a href="#attack"><span class="toc__n">7.0</span>ATT&amp;CK</a></li>
+              <li><a href="#findings"><span class="toc__n">8.0</span><span lang="en">Findings</span><span lang="fr">Constats</span></a></li>
+              <li><a href="#remediation"><span class="toc__n">9.0</span><span lang="en">Remediation</span><span lang="fr">Correctifs</span></a></li>
+            </ol>
+          </nav>
+
+          <div class="case__main">
+            <!-- 1.0 Summary -->
+            <section class="part" id="summary" aria-labelledby="summary-h">
+              <h2 class="part__h" id="summary-h" data-reveal><span class="part__n">1.0</span><span lang="en">Summary</span><span lang="fr">Résumé</span></h2>
+              <ul class="points" data-reveal-group>
+                <li>
+                  <span lang="en"><b>Pulls the indicators.</b> Regex extraction of IOCs (IPs, URLs, domains, file hashes) straight from raw <code>.eml</code> files.</span>
+                  <span lang="fr"><b>Extrait les indicateurs.</b> Extraction par regex des IOC (adresses IP, URL, domaines, empreintes de fichiers) directement à partir de fichiers <code>.eml</code> bruts.</span>
+                </li>
+                <li>
+                  <span lang="en"><b>Checks them against threat intel.</b> VirusTotal and AbuseIPDB REST APIs, with per-indicator caching and an offline fallback.</span>
+                  <span lang="fr"><b>Les vérifie auprès du renseignement sur les menaces.</b> API REST de VirusTotal et d’AbuseIPDB, avec mise en cache par indicateur et repli hors ligne.</span>
+                </li>
+                <li>
+                  <span lang="en"><b>Tuned, not guessed.</b> Adjusted the scoring weights to fix a false negative: 3 of 3 phishing test emails flagged, zero false positives.</span>
+                  <span lang="fr"><b>Ajusté, pas deviné.</b> Poids de pointage ajustés pour corriger un faux négatif : 3 courriels d’hameçonnage de test sur 3 signalés, aucun faux positif.</span>
+                </li>
+                <li>
+                  <span lang="en"><b>Tested and reportable.</b> 36 unit tests behind a 0-100 scoring engine that writes JSON and HTML triage reports.</span>
+                  <span lang="fr"><b>Testé et documenté.</b> 36 tests unitaires derrière un moteur de pointage de 0 à 100 qui produit des rapports de triage JSON et HTML.</span>
+                </li>
+              </ul>
+            </section>
+
+            <!-- 2.0 Method -->
+            <section class="part" id="method" aria-labelledby="method-h">
+              <h2 class="part__h" id="method-h" data-reveal><span class="part__n">2.0</span><span lang="en">Method</span><span lang="fr">Méthode</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">Threat-intel hits are weighted heaviest because they are the hardest evidence. The email's own red flags are weak alone and strong together, the way an analyst weighs clues that agree.</span>
+                <span lang="fr">Les résultats du renseignement sur les menaces pèsent le plus lourd, parce que ce sont les preuves les plus solides. Les signaux propres au courriel sont faibles seuls et forts ensemble, comme un analyste qui pèse des indices concordants.</span>
+              </p>
+              <div class="model" id="model" data-num="2.1" data-reveal></div>
+
+              <h3 class="part__sub" data-reveal>2.2 <span lang="en">The compound rule, in code</span><span lang="fr">La règle composée, dans le code</span></h3>
+              <figure class="codefig" data-reveal>
+                <figcaption><b>src/triage/score.py</b><span>Python</span></figcaption>
+                <pre class="code"><code>    <span class="c"># Compound signal: multiple independent phishing indicators together are
+    # far stronger than any one alone (mirrors analyst reasoning).</span>
+    weak_signal_count = sum(
+        1 for r in reasons
+        if any(k in r.lower() for k in
+               ("urgency", "impersonation", "macro", "double extension"))
+    )
+    if weak_signal_count &gt;= 2 and iocs.urls:
+        score += 20
+        reasons.append(
+            f"Multiple phishing indicators ({weak_signal_count}) combined with an "
+            "actionable link (compound risk)"
+        )</code></pre>
+              </figure>
+            </section>
+
+            <!-- 3.0 Timeline -->
+            <section class="part" id="timeline" aria-labelledby="timeline-h">
+              <h2 class="part__h" id="timeline-h" data-reveal><span class="part__n">3.0</span><span lang="en">Timeline of a triage run</span><span lang="fr">Déroulement d’un triage</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">One email, four stages, in order.</span>
+                <span lang="fr">Un courriel, quatre étapes, dans l’ordre.</span>
+              </p>
+              <ol class="timeline timeline--stages" data-timeline>
+                <li data-reveal>
+                  <span class="timeline__n"><span lang="en">Stage 1</span><span lang="fr">Étape 1</span></span>
+                  <h3><span lang="en">Extract</span><span lang="fr">Extraire</span></h3>
+                  <p>
+                    <span lang="en">Parse the email and pull the sender, IPs, URLs, domains, file hashes and attachment names. Private addresses are dropped as non-actionable.</span>
+                    <span lang="fr">Analyser le courriel et en extraire l’expéditeur, les adresses IP, les URL, les domaines, les empreintes de fichiers et les noms des pièces jointes. Les adresses privées sont écartées, car elles ne mènent à aucune action.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n"><span lang="en">Stage 2</span><span lang="fr">Étape 2</span></span>
+                  <h3><span lang="en">Enrich</span><span lang="fr">Enrichir</span></h3>
+                  <p>
+                    <span lang="en">Ask VirusTotal about hashes, URLs and domains, and AbuseIPDB about IP reputation. Results are cached per indicator. With no API key the stage returns "unknown" instead of failing.</span>
+                    <span lang="fr">Interroger VirusTotal sur les empreintes, les URL et les domaines, et AbuseIPDB sur la réputation des adresses IP. Les résultats sont mis en cache par indicateur. Sans clé d’API, l’étape renvoie « inconnu » au lieu d’échouer.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n"><span lang="en">Stage 3</span><span lang="fr">Étape 3</span></span>
+                  <h3><span lang="en">Score</span><span lang="fr">Noter</span></h3>
+                  <p>
+                    <span lang="en">Combine threat-intel hits with structural heuristics into a score from 0 to 100. Every point added is recorded with a human-readable reason.</span>
+                    <span lang="fr">Combiner les résultats du renseignement et les heuristiques structurelles en une note de 0 à 100. Chaque point ajouté est consigné avec une raison lisible.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n"><span lang="en">Stage 4</span><span lang="fr">Étape 4</span></span>
+                  <h3><span lang="en">Report</span><span lang="fr">Rapporter</span></h3>
+                  <p>
+                    <span lang="en">Write a machine-readable JSON report and a self-contained HTML one. The exit code follows the worst verdict, so the tool can slot into an automated pipeline.</span>
+                    <span lang="fr">Écrire un rapport JSON lisible par machine et un rapport HTML autonome. Le code de sortie suit le pire verdict, pour que l’outil s’intègre à une chaîne automatisée.</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
+
+            <!-- 4.0 Evidence -->
+            <section class="part" id="evidence" aria-labelledby="evidence-h">
+              <h2 class="part__h" id="evidence-h" data-reveal><span class="part__n">4.0</span><span lang="en">Evidence</span><span lang="fr">Preuves</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">Exhibit 02-A replays the pipeline's real output for the four sample emails in the repository: the same indicators, the same reasons, the same scores. Exhibit 02-B lets you set the red flags yourself against the real scoring rules.</span>
+                <span lang="fr">La pièce 02-A rejoue la vraie sortie du pipeline pour les quatre courriels d’exemple du dépôt : les mêmes indicateurs, les mêmes raisons, les mêmes notes. La pièce 02-B vous laisse choisir vous-même les signaux d’alerte, avec les vraies règles de pointage.</span>
+              </p>
+
+              <figure class="exhibit" data-reveal>
+                <div class="exhibit__tab"><b><span lang="en">Exhibit</span><span lang="fr">Pièce</span> 02-A / 02-B</b><span><span lang="en">Scoring replay</span><span lang="fr">Reconstitution du pointage</span></span></div>
+                <div class="widget" id="triage-replay"></div>
+              </figure>
+
+              <div class="stills stills--single" id="triage-stills" data-reveal-group></div>
+            </section>
+
+            <!-- 5.0 Terminal -->
+            <section class="part" id="terminal" aria-labelledby="terminal-h">
+              <h2 class="part__h" id="terminal-h" data-reveal><span class="part__n">5.0</span><span lang="en">In the terminal</span><span lang="fr">Dans le terminal</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">The same run as Exhibit 02-A, from the command line. It also works without API keys: <code>--offline</code> skips the network and scores the structure alone.</span>
+                <span lang="fr">Le même traitement que la pièce 02-A, en ligne de commande. Il fonctionne aussi sans clés d’API : <code>--offline</code> saute le réseau et note seulement la structure.</span>
+              </p>
+              <figure class="codefig" data-reveal>
+                <figcaption><b>python -m triage samples/*.eml</b><span><span lang="en">example output, from the README</span><span lang="fr">exemple de sortie, tiré du README</span></span></figcaption>
+                <pre class="code"><code><span class="p">$</span> python -m triage samples/*.eml
+Triaging 4 email(s)...
+
+<span class="v">[SUSPICIOUS]</span>  50/100  samples/01-credential-phish.eml
+           Urgent: Your account will be suspended in 24 hours
+<span class="v">[SUSPICIOUS]</span>  55/100  samples/02-invoice-attachment.eml
+           Invoice #INV-2026-0918 - Payment Overdue
+<span class="r">[MALICIOUS]</span>  90/100  samples/03-malware-link.eml
+           Your package could not be delivered
+<span class="p">[BENIGN]</span>   0/100  samples/04-legitimate-newsletter.eml
+           Your weekly digest
+
+Summary: 1 malicious, 2 suspicious, 1 benign</code></pre>
+              </figure>
+              <p class="part__note" data-reveal>
+                <span lang="en">The exit code follows the worst verdict (2 malicious, 1 suspicious, 0 clean), so a script or a CI job can act on the result.</span>
+                <span lang="fr">Le code de sortie suit le pire verdict (2 pour malveillant, 1 pour suspect, 0 pour propre), pour qu’un script ou une tâche d’intégration continue puisse réagir au résultat.</span>
+              </p>
+            </section>
+
+            <!-- 6.0 Tests -->
+            <section class="part" id="tests" aria-labelledby="tests-h">
+              <h2 class="part__h" id="tests-h" data-reveal><span class="part__n">6.0</span><span lang="en">Tests</span><span lang="fr">Tests</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">36 pytest tests, one file per stage of the pipeline.</span>
+                <span lang="fr">36 tests pytest, un fichier par étape du pipeline.</span>
+              </p>
+              <div class="tblwrap" data-reveal tabindex="0" role="region" aria-labelledby="tests-cap">
+                <table class="tbl">
+                  <caption id="tests-cap">6.1 <span lang="en">Test files</span><span lang="fr">Fichiers de tests</span></caption>
+                  <thead>
+                    <tr>
+                      <th scope="col"><span lang="en">File</span><span lang="fr">Fichier</span></th>
+                      <th scope="col">Tests</th>
+                      <th scope="col"><span lang="en">Covers</span><span lang="fr">Couvre</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><th scope="row"><code>test_extract.py</code></th><td>14</td><td><span lang="en">Indicator extraction from raw emails</span><span lang="fr">L’extraction des indicateurs des courriels bruts</span></td></tr>
+                    <tr><th scope="row"><code>test_enrich.py</code></th><td>8</td><td><span lang="en">Threat-intel enrichment, with the APIs mocked</span><span lang="fr">L’enrichissement, avec les API simulées</span></td></tr>
+                    <tr><th scope="row"><code>test_score.py</code></th><td>8</td><td><span lang="en">The scoring engine</span><span lang="fr">Le moteur de pointage</span></td></tr>
+                    <tr><th scope="row"><code>test_report.py</code></th><td>3</td><td><span lang="en">JSON and HTML reports, including HTML escaping</span><span lang="fr">Les rapports JSON et HTML, y compris l’échappement HTML</span></td></tr>
+                    <tr><th scope="row"><code>test_cli.py</code></th><td>3</td><td><span lang="en">The command line</span><span lang="fr">La ligne de commande</span></td></tr>
+                    <tr><th scope="row">Total</th><td><strong>36</strong></td><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 class="part__sub" data-reveal>6.2 <span lang="en">A report can't be turned into an attack</span><span lang="fr">Un rapport ne peut pas devenir une attaque</span></h3>
+              <figure class="codefig" data-reveal>
+                <figcaption><b>tests/test_report.py</b><span>pytest</span></figcaption>
+                <pre class="code"><code>def test_html_escapes_content(tmp_path):
+    alerts = [ScoredAlert(subject="&lt;script&gt;x&lt;/script&gt;", sender="a@b.com",
+                          score=0, verdict="Benign", reasons=["ok"],
+                          enrichment=[], iocs={})]
+    path = tmp_path / "r.html"
+    write_html(alerts, str(path))
+    html = path.read_text()
+    <span class="c"># Jinja2 autoescape should neutralize the script tag</span>
+    assert "&lt;script&gt;x&lt;/script&gt;" not in html</code></pre>
+              </figure>
+              <p class="part__note" data-reveal>
+                <span lang="en">The emails being triaged are hostile by definition, so the report must never run what they contain.</span>
+                <span lang="fr">Les courriels triés sont hostiles par définition : le rapport ne doit jamais exécuter ce qu’ils contiennent.</span>
+              </p>
+            </section>
+
+            <!-- 7.0 ATT&CK -->
+            <section class="part" id="attack" aria-labelledby="attack-h">
+              <h2 class="part__h" id="attack-h" data-reveal><span class="part__n">7.0</span><span lang="en">MITRE ATT&amp;CK mapping</span><span lang="fr">Correspondance MITRE ATT&amp;CK</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">The pipeline works at the initial-access stage. A SIEM like the one in Project 1 catches what happens if a lure gets through.</span>
+                <span lang="fr">Le pipeline intervient à l’étape de l’accès initial. Un SIEM comme celui du projet 1 détecte ce qui se passe si un leurre passe malgré tout.</span>
+              </p>
+              <div class="tblwrap" data-reveal tabindex="0" role="region" aria-labelledby="attack-cap">
+                <table class="tbl">
+                  <caption id="attack-cap">7.1 <span lang="en">Techniques</span><span lang="fr">Techniques</span></caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Technique</th>
+                      <th scope="col">ID</th>
+                      <th scope="col"><span lang="en">How the pipeline addresses it</span><span lang="fr">Ce que fait le pipeline</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><th scope="row">Phishing</th><td><code>T1566</code></td><td><span lang="en">Core focus: triages inbound emails for phishing indicators.</span><span lang="fr">Le cœur de l’outil : il trie les courriels entrants à la recherche d’indicateurs d’hameçonnage.</span></td></tr>
+                    <tr><th scope="row">Spearphishing Attachment</th><td><code>T1566.001</code></td><td><span lang="en">Flags deceptive attachments (double extensions) and macro-enable lures.</span><span lang="fr">Signale les pièces jointes trompeuses (doubles extensions) et les leurres d’activation des macros.</span></td></tr>
+                    <tr><th scope="row">Spearphishing Link</th><td><code>T1566.002</code></td><td><span lang="en">Extracts and enriches URLs against VirusTotal; flags known-bad links.</span><span lang="fr">Extrait les URL, les enrichit avec VirusTotal et signale les liens connus comme malveillants.</span></td></tr>
+                    <tr><th scope="row">User Execution: Malicious File</th><td><code>T1204.002</code></td><td><span lang="en">Detects attachment hashes flagged by VirusTotal as malicious.</span><span lang="fr">Détecte les empreintes de pièces jointes signalées comme malveillantes par VirusTotal.</span></td></tr>
+                    <tr><th scope="row">User Execution: Malicious Link</th><td><code>T1204.001</code></td><td><span lang="en">Scores actionable links, especially combined with social-engineering cues.</span><span lang="fr">Note les liens cliquables, surtout lorsqu’ils sont combinés à des indices d’ingénierie sociale.</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <!-- 8.0 Findings -->
+            <section class="part" id="findings" aria-labelledby="findings-h">
+              <h2 class="part__h" id="findings-h" data-reveal><span class="part__n">8.0</span><span lang="en">Findings</span><span lang="fr">Constats</span></h2>
+              <ol class="findings" data-reveal-group>
+                <li class="finding">
+                  <p class="finding__id">F-01 <span class="finding__tag"><span lang="en">False negative</span><span lang="fr">Faux négatif</span></span></p>
+                  <h3><span lang="en">The first weights let a credential phish through.</span><span lang="fr">Les premiers poids laissaient passer un hameçonnage d’identifiants.</span></h3>
+                  <p>
+                    <span lang="en">A lookalike sender domain plus urgency language scored 20 out of 100: benign. Either clue alone can be innocent. Together, with a link to click, they are textbook credential phishing.</span>
+                    <span lang="fr">Un domaine d’expéditeur sosie et un langage d’urgence donnaient 20 sur 100 : bénin. Chaque indice seul peut être innocent. Ensemble, avec un lien sur lequel cliquer, c’est un cas typique d’hameçonnage d’identifiants.</span>
+                  </p>
+                </li>
+                <li class="finding">
+                  <p class="finding__id">F-02 <span class="finding__tag"><span lang="en">Result</span><span lang="fr">Résultat</span></span></p>
+                  <h3><span lang="en">Three of three phishing samples flagged, none missed.</span><span lang="fr">Trois échantillons d’hameçonnage sur trois signalés, aucun manqué.</span></h3>
+                  <p>
+                    <span lang="en">After tuning, the samples score 50, 55 and 90. The legitimate newsletter scores 0. No false positives on the test set.</span>
+                    <span lang="fr">Après l’ajustement, les échantillons obtiennent 50, 55 et 90. L’infolettre légitime obtient 0. Aucun faux positif sur le jeu de test.</span>
+                  </p>
+                </li>
+                <li class="finding">
+                  <p class="finding__id">F-03 <span class="finding__tag"><span lang="en">Explainability</span><span lang="fr">Explicabilité</span></span></p>
+                  <h3><span lang="en">A verdict nobody can justify is not actionable.</span><span lang="fr">Un verdict que personne ne peut justifier n’est pas exploitable.</span></h3>
+                  <p>
+                    <span lang="en">Every alert lists the specific reasons behind its score, so an analyst can confirm the call, escalate it or dismiss it with evidence.</span>
+                    <span lang="fr">Chaque alerte énumère les raisons précises de sa note, pour qu’un analyste puisse confirmer la décision, la faire remonter ou l’écarter, preuves à l’appui.</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
+
+            <!-- 9.0 Remediation -->
+            <section class="part" id="remediation" aria-labelledby="remediation-h">
+              <h2 class="part__h" id="remediation-h" data-reveal><span class="part__n">9.0</span><span lang="en">Remediation</span><span lang="fr">Correctifs</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">What changed after the false negative, and the safeguards around the pipeline.</span>
+                <span lang="fr">Ce qui a changé après le faux négatif, et les protections autour du pipeline.</span>
+              </p>
+              <ol class="actions" data-reveal-group>
+                <li>
+                  <span class="actions__id">R-01</span>
+                  <span class="pill pill--pass"><span lang="en">Done</span><span lang="fr">Fait</span></span>
+                  <p>
+                    <span lang="en"><b>Doubled the lookalike-domain weight</b>, from 10 points to 20: these domains are registered specifically to deceive.</span>
+                    <span lang="fr"><b>Doublé le poids du domaine sosie</b>, de 10 à 20 points : ces domaines sont enregistrés expressément pour tromper.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-02</span>
+                  <span class="pill pill--pass"><span lang="en">Done</span><span lang="fr">Fait</span></span>
+                  <p>
+                    <span lang="en"><b>Added a 20-point compound bonus</b> for two or more weak signals plus a clickable link. The missed email now scores 50: suspicious.</span>
+                    <span lang="fr"><b>Ajouté un bonus composé de 20 points</b> pour deux signaux faibles ou plus avec un lien cliquable. Le courriel manqué obtient maintenant 50 : suspect.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-03</span>
+                  <span class="pill pill--pass"><span lang="en">Done</span><span lang="fr">Fait</span></span>
+                  <p>
+                    <span lang="en"><b>36 unit tests</b> cover extraction, enrichment (mocked), scoring, reporting and the CLI, including a check that the HTML report escapes hostile content.</span>
+                    <span lang="fr"><b>36 tests unitaires</b> couvrent l’extraction, l’enrichissement (simulé), le pointage, les rapports et la ligne de commande, y compris une vérification que le rapport HTML neutralise le contenu hostile.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-04</span>
+                  <span class="pill pill--pass"><span lang="en">Done</span><span lang="fr">Fait</span></span>
+                  <p>
+                    <span lang="en"><b>A safe test corpus</b>: documentation IP ranges and the EICAR test hash. No real malware in the repository.</span>
+                    <span lang="fr"><b>Un corpus de test sans danger</b> : des plages d’adresses IP de documentation et l’empreinte de test EICAR. Aucun vrai logiciel malveillant dans le dépôt.</span>
+                  </p>
+                </li>
+              </ol>
+
+              <nav class="pager">
+                <a href="./siem-home-lab.html">
+                  <span><span lang="en">← Previous · Project 1</span><span lang="fr">← Précédent · Projet 1</span></span>
+                  <b><span lang="en">SIEM Home Lab</span><span lang="fr">Laboratoire SIEM</span></b>
+                </a>
+                <a class="pager__next" href="./#projects">
+                  <span><span lang="en">All projects →</span><span lang="fr">Tous les projets →</span></span>
+                  <b>Makan Homayoun</b>
+                </a>
+              </nav>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <p class="footer__end" aria-hidden="true"><span><span lang="en">End of file</span><span lang="fr">Fin du dossier</span></span></p>
+        <div class="footer__row">
+          <p>© 2026 Makan Homayoun · Montréal, QC</p>
+          <ul class="footer__links">
+            <li>
+              <a href="mailto:makan.h07@gmail.com"><svg class="icon" aria-hidden="true"><use href="#i-mail" /></svg>makan.h07@gmail.com</a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/makan-homayoun" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-linkedin" /></svg>LinkedIn</a>
+            </li>
+            <li>
+              <a href="https://github.com/MakanH" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>GitHub</a>
+            </li>
+          </ul>
+          <a class="footer__top" href="#top">
+            <span lang="en">Back to top</span><span lang="fr">Haut de page</span>
+            <svg class="icon icon--sm" aria-hidden="true" style="transform: rotate(180deg)"><use href="#i-arrow-down" /></svg>
+          </a>
+        </div>
+      </div>
+      <div class="tlp tlp--foot">
+        <div class="wrap tlp__row">
+          <span class="tlp__mark">TLP:CLEAR</span>
+          <span class="tlp__text"><span lang="en">Public release · no limit on disclosure</span><span lang="fr">Diffusion publique · aucune restriction</span></span>
+        </div>
+      </div>
+    </footer>
+
+
+    <dialog class="lightbox" id="lightbox">
+      <button class="lightbox__close" type="button" data-close>
+        <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+        <span class="sr-only"><span lang="en">Close</span><span lang="fr">Fermer</span></span>
+      </button>
+      <figure>
+        <img id="lightbox-img" alt="" />
+        <figcaption id="lightbox-cap"></figcaption>
+      </figure>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

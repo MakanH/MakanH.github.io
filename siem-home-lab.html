@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en" data-title-en="SIEM Home Lab · Makan Homayoun" data-title-fr="Laboratoire SIEM · Makan Homayoun">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>SIEM Home Lab · Makan Homayoun</title>
+    <meta name="description" content="Project 1 of Makan Homayoun: a pfSense-segmented lab with Wazuh watching a Windows domain controller and a Linux endpoint, custom detections, and three simulated attacks, all detected." />
+    <meta name="author" content="Makan Homayoun" />
+    <meta name="theme-color" content="#101317" />
+    <meta name="color-scheme" content="dark" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="SIEM Home Lab · Makan Homayoun" />
+    <meta property="og:description" content="Project 1 of Makan Homayoun: a pfSense-segmented lab with Wazuh watching a Windows domain controller and a Linux endpoint, custom detections, and three simulated attacks, all detected." />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="/src/styles/index.css" />
+
+    <script>
+      // Language before first paint: the visitor's saved choice, else the browser's language, else English.
+      // Entrance states only apply once scripting is known to work; if the app never starts, drop them.
+      (function () {
+        var root = document.documentElement;
+        var lang = null;
+        try {
+          lang = localStorage.getItem('casefile.lang');
+        } catch (error) {}
+        if (lang !== 'en' && lang !== 'fr') lang = /^fr\b/i.test(navigator.language || '') ? 'fr' : 'en';
+        root.lang = lang;
+        if (lang === 'fr') document.title = root.getAttribute('data-title-fr') || document.title;
+        root.classList.add('js');
+        setTimeout(function () {
+          if (!window.__caseFileBooted) root.classList.remove('js');
+        }, 6000);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- ───────────── Icon sprite (referenced with <use href="#id">) ───────────── -->
+    <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+      <defs>
+        <symbol id="i-github" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+        </symbol>
+        <symbol id="i-linkedin" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+        </symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          </g>
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M12 15V3" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-ur" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7h10v10" />
+            <path d="M7 17 17 7" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </g>
+        </symbol>
+        <symbol id="i-arrow-down" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14" />
+            <path d="m19 12-7 7-7-7" />
+          </g>
+        </symbol>
+        <symbol id="i-play" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M7 4.5v15l12-7.5-12-7.5Z" />
+        </symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </g>
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </g>
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </g>
+        </symbol>
+        <symbol id="i-expand" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h6v6" />
+            <path d="M9 21H3v-6" />
+            <path d="m21 3-7 7" />
+            <path d="m3 21 7-7" />
+          </g>
+        </symbol>
+        <symbol id="i-sweep" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            <path d="M3 21v-5h5" />
+          </g>
+        </symbol>
+      </defs>
+    </svg>
+
+    <a class="skip" href="#main"><span lang="en">Skip to content</span><span lang="fr">Aller au contenu</span></a>
+
+    <!-- ───────────── Classification banner ───────────── -->
+    <div class="tlp" id="top">
+      <div class="wrap tlp__row">
+        <span class="tlp__mark">TLP:CLEAR</span>
+        <span class="tlp__text"><span lang="en">Public release · no limit on disclosure</span><span lang="fr">Diffusion publique · aucune restriction</span></span>
+        <span class="tlp__clock" id="clock" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <!-- ───────────── Header ───────────── -->
+    <header class="bar" id="bar">
+      <div class="wrap bar__row">
+        <a class="bar__brand" href="./">
+          <span class="bar__mono" aria-hidden="true">MH</span>
+          <span class="bar__name">Makan Homayoun</span>
+        </a>
+
+        <nav class="bar__nav" id="nav">
+          <a href="./#about"><span class="bar__num">01</span><span lang="en">About</span><span lang="fr">À propos</span></a>
+          <a href="./#experience"><span class="bar__num">02</span><span lang="en">Experience</span><span lang="fr">Parcours</span></a>
+          <a href="./#projects" class="is-current" aria-current="true"><span class="bar__num">03</span><span lang="en">Projects</span><span lang="fr">Projets</span></a>
+          <a href="./#skills"><span class="bar__num">04</span><span lang="en">Skills</span><span lang="fr">Compétences</span></a>
+        </nav>
+
+        <div class="bar__tools">
+          <div class="lang" role="group" aria-label="Language · Langue">
+            <button type="button" data-set-lang="en" aria-pressed="true" aria-label="English">EN</button>
+            <button type="button" data-set-lang="fr" aria-pressed="false" aria-label="Français">FR</button>
+          </div>
+          <button class="iconbtn bar__menu" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">
+            <svg class="icon iconbtn__open" aria-hidden="true"><use href="#i-menu" /></svg>
+            <svg class="icon iconbtn__shut" aria-hidden="true"><use href="#i-close" /></svg>
+            <span class="sr-only">Menu</span>
+          </button>
+        </div>
+      </div>
+      <div class="bar__progress" aria-hidden="true"><span id="progress"></span></div>
+    </header>
+
+    <main id="main">
+      <div class="wrap pagehead">
+        <nav class="crumb">
+          <a href="./#projects"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-right" /></svg><span lang="en">All projects</span><span lang="fr">Tous les projets</span></a>
+          <span aria-hidden="true">/</span>
+          <span><span lang="en">Project 1</span><span lang="fr">Projet 1</span></span>
+        </nav>
+
+        <article class="cover sheet" data-reveal>
+          <div class="cover__band">
+            <span><span lang="en">Project 1</span><span lang="fr">Projet 1</span></span>
+            <span class="cover__type"><span lang="en">Incident report <i>·</i> lab exercise</span><span lang="fr">Rapport d’incident <i>·</i> exercice en laboratoire</span></span>
+            <span class="cover__tlp">TLP:CLEAR</span>
+          </div>
+          <div class="cover__body">
+            <div class="cover__lead">
+              <h1 class="cover__title"><span lang="en">SIEM Home Lab</span><span lang="fr">Laboratoire SIEM</span></h1>
+              <p class="lede">
+                <span lang="en">A segmented network, a SIEM, and three attacks it had to catch.</span>
+                <span lang="fr">Un réseau segmenté, un SIEM, et trois attaques qu’il devait détecter.</span>
+              </p>
+              <p class="cover__desc" lang="en">
+                A self-built SOC lab. pfSense splits a VirtualBox network into a corporate LAN, a DMZ and a SIEM subnet,
+                and Wazuh watches a Windows domain controller and a Linux endpoint. Then I attack it from Kali and check
+                that <span class="redact">every move gets caught</span>.
+              </p>
+              <p class="cover__desc" lang="fr">
+                Un laboratoire SOC que j’ai bâti moi-même. pfSense divise un réseau VirtualBox en un LAN d’entreprise, une
+                DMZ et un sous-réseau SIEM, et Wazuh surveille un contrôleur de domaine Windows et un poste Linux. Ensuite,
+                je l’attaque depuis Kali et je vérifie que <span class="redact">chaque geste est détecté</span>.
+              </p>
+              <div class="cover__actions">
+                <a class="btn" href="https://github.com/MakanH/soc-siem-homelab" target="_blank" rel="noopener">
+                  <svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>
+                  <span>soc-siem-homelab</span>
+                  <svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-ur" /></svg>
+                </a>
+              </div>
+            </div>
+
+            <dl class="kv cover__meta">
+              <dt><span lang="en">Period</span><span lang="fr">Période</span></dt>
+              <dd><span lang="en">June – July 2026</span><span lang="fr">Juin – juill. 2026</span></dd>
+              <dt><span lang="en">Environment</span><span lang="fr">Milieu</span></dt>
+              <dd><span lang="en">VirtualBox on a Kali Linux host, domain <code>lab.local</code></span><span lang="fr">VirtualBox sur un hôte Kali Linux, domaine <code>lab.local</code></span></dd>
+              <dt><span lang="en">Stack</span><span lang="fr">Outils</span></dt>
+              <dd>
+                <ul class="tags">
+                  <li>Wazuh 4.14</li>
+                  <li>pfSense</li>
+                  <li>Active Directory</li>
+                  <li>Sysmon</li>
+                  <li>C# / .NET 8</li>
+                  <li>VirtualBox</li>
+                </ul>
+              </dd>
+              <dt>ATT&amp;CK</dt>
+              <dd>
+                <code>T1046</code> <span lang="en">Discovery</span><span lang="fr">Découverte</span>
+                <span class="cover__sep">·</span>
+                <code>T1110</code> <span lang="en">Credential access</span><span lang="fr">Accès aux identifiants</span>
+              </dd>
+              <dt><span lang="en">Outcome</span><span lang="fr">Résultat</span></dt>
+              <dd><span lang="en"><strong>3 of 3</strong> simulated attacks detected</span><span lang="fr"><strong>3 sur 3</strong> attaques simulées détectées</span></dd>
+            </dl>
+
+            <span class="stamp stamp--green cover__stamp" data-stamp aria-hidden="true">
+              <span lang="en">Detected</span><span lang="fr">Détecté</span>
+              <small><span lang="en">3 of 3 attacks</span><span lang="fr">3 attaques sur 3</span></small>
+            </span>
+          </div>
+        </article>
+      </div>
+
+      <div class="wrap">
+        <div class="case__body">
+          <nav class="toc" data-toc>
+            <p class="label"><span lang="en">Contents</span><span lang="fr">Sommaire</span></p>
+            <ol>
+              <li><a href="#summary"><span class="toc__n">1.0</span><span lang="en">Summary</span><span lang="fr">Résumé</span></a></li>
+              <li><a href="#scope"><span class="toc__n">2.0</span><span lang="en">Scope</span><span lang="fr">Portée</span></a></li>
+              <li><a href="#timeline"><span class="toc__n">3.0</span><span lang="en">Timeline</span><span lang="fr">Chronologie</span></a></li>
+              <li><a href="#evidence"><span class="toc__n">4.0</span><span lang="en">Evidence</span><span lang="fr">Preuves</span></a></li>
+              <li><a href="#detections"><span class="toc__n">5.0</span><span lang="en">Detections</span><span lang="fr">Détections</span></a></li>
+              <li><a href="#findings"><span class="toc__n">6.0</span><span lang="en">Findings</span><span lang="fr">Constats</span></a></li>
+              <li><a href="#remediation"><span class="toc__n">7.0</span><span lang="en">Remediation</span><span lang="fr">Correctifs</span></a></li>
+              <li><a href="#lessons"><span class="toc__n">8.0</span><span lang="en">Lessons</span><span lang="fr">Leçons</span></a></li>
+            </ol>
+          </nav>
+
+          <div class="case__main">
+            <!-- 1.0 Summary -->
+            <section class="part" id="summary" aria-labelledby="summary-h">
+              <h2 class="part__h" id="summary-h" data-reveal><span class="part__n">1.0</span><span lang="en">Summary</span><span lang="fr">Résumé</span></h2>
+              <ul class="points" data-reveal-group>
+                <li>
+                  <span lang="en"><b>Segmented by design.</b> Corporate LAN, DMZ and SIEM zones behind pfSense, default-deny, with a justification for every rule.</span>
+                  <span lang="fr"><b>Segmenté dès la conception.</b> LAN d’entreprise, DMZ et zone SIEM derrière pfSense, en refus par défaut, avec une justification pour chaque règle.</span>
+                </li>
+                <li>
+                  <span lang="en"><b>One place to watch.</b> Wazuh aggregates security logs from Active Directory and Linux endpoints for real-time alerting.</span>
+                  <span lang="fr"><b>Un seul endroit à surveiller.</b> Wazuh agrège les journaux de sécurité d’Active Directory et des postes Linux pour alerter en temps réel.</span>
+                </li>
+                <li>
+                  <span lang="en"><b>Hand-written detections.</b> A C# log generator, a custom XML decoder and three chained correlation rules that escalate a brute force from a level-5 event to a level-12 alert.</span>
+                  <span lang="fr"><b>Des détections écrites à la main.</b> Un générateur de journaux en C#, un décodeur XML personnalisé et trois règles de corrélation chaînées qui font passer une force brute d’un événement de niveau 5 à une alerte de niveau 12.</span>
+                </li>
+                <li>
+                  <span lang="en"><b>Proven under attack.</b> Three scenarios run from Kali, all three detected, with two playbooks mapped to ATT&amp;CK T1046 and T1110.</span>
+                  <span lang="fr"><b>Éprouvé sous attaque.</b> Trois scénarios lancés depuis Kali, tous les trois détectés, avec deux playbooks associés à ATT&amp;CK T1046 et T1110.</span>
+                </li>
+              </ul>
+            </section>
+
+            <!-- 2.0 Scope -->
+            <section class="part" id="scope" aria-labelledby="scope-h">
+              <h2 class="part__h" id="scope-h" data-reveal><span class="part__n">2.0</span><span lang="en">Scope and environment</span><span lang="fr">Portée et environnement</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">pfSense sits between every segment. A compromise in one zone has no easy path into the others, and the monitoring stack is kept apart from the hosts it watches.</span>
+                <span lang="fr">pfSense se trouve entre chaque segment. Une compromission dans une zone n’a pas de chemin facile vers les autres, et la pile de surveillance est tenue à l’écart des hôtes qu’elle surveille.</span>
+              </p>
+
+              <div class="tblwrap" data-reveal tabindex="0" role="region" aria-labelledby="hosts-cap">
+                <table class="tbl">
+                  <caption id="hosts-cap">2.1 <span lang="en">Hosts in scope</span><span lang="fr">Hôtes visés</span></caption>
+                  <thead>
+                    <tr>
+                      <th scope="col"><span lang="en">Host</span><span lang="fr">Hôte</span></th>
+                      <th scope="col">Zone</th>
+                      <th scope="col"><span lang="en">Address</span><span lang="fr">Adresse</span></th>
+                      <th scope="col"><span lang="en">Role</span><span lang="fr">Rôle</span></th>
+                      <th scope="col"><span lang="en">Telemetry</span><span lang="fr">Télémétrie</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row"><span lang="en">Domain controller</span><span lang="fr">Contrôleur de domaine</span></th>
+                      <td>LAN</td>
+                      <td><code>10.10.10.10</code></td>
+                      <td><span lang="en">Windows Server 2022, AD DS and DNS for <code>lab.local</code></span><span lang="fr">Windows Server 2022, AD DS et DNS pour <code>lab.local</code></span></td>
+                      <td><span lang="en">Windows Security log and Sysmon, via the Wazuh agent</span><span lang="fr">Journal de sécurité Windows et Sysmon, par l’agent Wazuh</span></td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><span lang="en">Kali attacker</span><span lang="fr">Attaquant Kali</span></th>
+                      <td>LAN</td>
+                      <td><code>10.10.10.50</code></td>
+                      <td><span lang="en">Assumed-breach position on the corporate LAN</span><span lang="fr">Position de compromission présumée sur le LAN d’entreprise</span></td>
+                      <td><span lang="en">None: the attacker</span><span lang="fr">Aucune : c’est l’attaquant</span></td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><span lang="en">Linux endpoint</span><span lang="fr">Poste Linux</span></th>
+                      <td>DMZ</td>
+                      <td><code>10.10.20.10</code></td>
+                      <td><span lang="en">Ubuntu Server 22.04, runs the custom app</span><span lang="fr">Ubuntu Server 22.04, exécute l’application maison</span></td>
+                      <td><span lang="en">syslog and the CustomApp log, via the Wazuh agent</span><span lang="fr">syslog et le journal CustomApp, par l’agent Wazuh</span></td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><span lang="en">Wazuh manager</span><span lang="fr">Gestionnaire Wazuh</span></th>
+                      <td>SIEM</td>
+                      <td><code>10.10.30.10</code></td>
+                      <td><span lang="en">Ubuntu Server 22.04: Wazuh indexer, manager and dashboard</span><span lang="fr">Ubuntu Server 22.04 : indexeur, gestionnaire et tableau de bord Wazuh</span></td>
+                      <td><span lang="en">Receives agent logs on 1514-1515</span><span lang="fr">Reçoit les journaux des agents sur 1514-1515</span></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">pfSense</th>
+                      <td><span lang="en">All</span><span lang="fr">Toutes</span></td>
+                      <td><span lang="en"><code>.1</code> on each segment</span><span lang="fr"><code>.1</code> sur chaque segment</span></td>
+                      <td><span lang="en">Routes and filters between every segment</span><span lang="fr">Route et filtre entre tous les segments</span></td>
+                      <td><span lang="en">Firewall log, not yet forwarded to Wazuh</span><span lang="fr">Journal du pare-feu, pas encore transmis à Wazuh</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="tblwrap" data-reveal tabindex="0" role="region" aria-labelledby="ifaces-cap">
+                <table class="tbl">
+                  <caption id="ifaces-cap">2.2 <span lang="en">pfSense interfaces</span><span lang="fr">Interfaces pfSense</span></caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Interface</th>
+                      <th scope="col"><span lang="en">NIC</span><span lang="fr">Carte</span></th>
+                      <th scope="col"><span lang="en">Subnet</span><span lang="fr">Sous-réseau</span></th>
+                      <th scope="col"><span lang="en">Role</span><span lang="fr">Rôle</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><th scope="row">WAN</th><td><code>em0</code></td><td><span lang="en">DHCP via NAT (<code>10.0.2.x</code>)</span><span lang="fr">DHCP par NAT (<code>10.0.2.x</code>)</span></td><td><span lang="en">Internet uplink</span><span lang="fr">Liaison Internet</span></td></tr>
+                    <tr><th scope="row">LAN</th><td><code>em1</code></td><td><code>10.10.10.0/24</code></td><td><span lang="en">Corporate LAN</span><span lang="fr">LAN d’entreprise</span></td></tr>
+                    <tr><th scope="row">DMZ</th><td><code>em2</code></td><td><code>10.10.20.0/24</code></td><td><span lang="en">Semi-exposed zone (Linux endpoint)</span><span lang="fr">Zone semi-exposée (poste Linux)</span></td></tr>
+                    <tr><th scope="row">SIEM</th><td><code>em3</code></td><td><code>10.10.30.0/24</code></td><td><span lang="en">Monitoring network (Wazuh)</span><span lang="fr">Réseau de surveillance (Wazuh)</span></td></tr>
+                    <tr><th scope="row">MGMT</th><td><code>em4</code></td><td><code>192.168.56.0/24</code></td><td><span lang="en">Out-of-band management (host-only)</span><span lang="fr">Gestion hors bande (réseau hôte uniquement)</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="part__note" data-reveal>
+                <span lang="en">The management network reaches the pfSense and Wazuh consoles from the host, so administration never crosses the production segments.</span>
+                <span lang="fr">Le réseau de gestion relie l’hôte aux consoles de pfSense et de Wazuh, pour que l’administration ne traverse jamais les segments de production.</span>
+              </p>
+
+              <div class="policy" id="policy" data-num="2.3" data-reveal></div>
+            </section>
+
+            <!-- 3.0 Timeline -->
+            <section class="part" id="timeline" aria-labelledby="timeline-h">
+              <h2 class="part__h" id="timeline-h" data-reveal><span class="part__n">3.0</span><span lang="en">Timeline</span><span lang="fr">Chronologie</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">The build, phase by phase, in the order it happened.</span>
+                <span lang="fr">La construction, phase par phase, dans l’ordre où elle s’est déroulée.</span>
+              </p>
+              <ol class="timeline" data-timeline>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 1</span>
+                  <h3><span lang="en">Network design</span><span lang="fr">Conception du réseau</span></h3>
+                  <p>
+                    <span lang="en">Three purpose-built segments, each one a separate VirtualBox internal network, plus a host-only management network for the consoles.</span>
+                    <span lang="fr">Trois segments dédiés, chacun sur son propre réseau interne VirtualBox, plus un réseau de gestion en mode hôte uniquement pour les consoles.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 2</span>
+                  <h3><span lang="en">pfSense segmentation</span><span lang="fr">Segmentation pfSense</span></h3>
+                  <p>
+                    <span lang="en">Five interfaces and an ordered rule set. The DMZ and SIEM interfaces are default-deny, so every permitted flow is explicit.</span>
+                    <span lang="fr">Cinq interfaces et un jeu de règles ordonné. Les interfaces DMZ et SIEM sont en refus par défaut : chaque flux permis est donc explicite.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 3</span>
+                  <h3><span lang="en">Wazuh deployment</span><span lang="fr">Déploiement de Wazuh</span></h3>
+                  <p>
+                    <span lang="en">The all-in-one Wazuh stack on Ubuntu Server. The first install failed at the dashboard step: the root volume was 24 GB of a 50 GB disk. I traced it in the install log, extended the volume and re-ran it clean.</span>
+                    <span lang="fr">La pile Wazuh tout-en-un sur Ubuntu Server. La première installation a échoué à l’étape du tableau de bord : le volume racine ne faisait que 24 Go d’un disque de 50 Go. J’ai trouvé la cause dans le journal d’installation, agrandi le volume et relancé l’installation sans erreur.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 4</span>
+                  <h3><span lang="en">Active Directory and telemetry</span><span lang="fr">Active Directory et télémétrie</span></h3>
+                  <p>
+                    <span lang="en">A Windows Server 2022 domain controller for <code>lab.local</code>, with Sysmon and a Wazuh agent forwarding to the SIEM segment.</span>
+                    <span lang="fr">Un contrôleur de domaine Windows Server 2022 pour <code>lab.local</code>, avec Sysmon et un agent Wazuh qui transmet au segment SIEM.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 5</span>
+                  <h3><span lang="en">Endpoints and agents</span><span lang="fr">Postes et agents</span></h3>
+                  <p>
+                    <span lang="en">An Ubuntu endpoint in the DMZ. Both agents reporting active confirmed the allow-paths work while the isolation rules stay in force.</span>
+                    <span lang="fr">Un poste Ubuntu dans la DMZ. Les deux agents actifs ont confirmé que les chemins autorisés fonctionnent pendant que les règles d’isolation restent en vigueur.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 6</span>
+                  <h3><span lang="en">Custom detections</span><span lang="fr">Détections personnalisées</span></h3>
+                  <p>
+                    <span lang="en">A decoder for the CustomApp log and a correlation ladder, <code>100101</code> to <code>100102</code> to <code>100103</code>, validated with <code>wazuh-logtest</code>.</span>
+                    <span lang="fr">Un décodeur pour le journal CustomApp et une échelle de corrélation, de <code>100101</code> à <code>100102</code> puis <code>100103</code>, validée avec <code>wazuh-logtest</code>.</span>
+                  </p>
+                </li>
+                <li data-reveal>
+                  <span class="timeline__n">Phase 7</span>
+                  <h3><span lang="en">Attack simulation</span><span lang="fr">Simulation d’attaques</span></h3>
+                  <p>
+                    <span lang="en">Nmap recon, a custom-app brute force and an SMB brute force, all from Kali. Three detected, two playbooks written.</span>
+                    <span lang="fr">Reconnaissance Nmap, force brute sur l’application maison et force brute SMB, toutes depuis Kali. Trois détectées, deux playbooks rédigés.</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
+
+            <!-- 4.0 Evidence -->
+            <section class="part" id="evidence" aria-labelledby="evidence-h">
+              <h2 class="part__h" id="evidence-h" data-reveal><span class="part__n">4.0</span><span lang="en">Evidence</span><span lang="fr">Preuves</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">Exhibit 01-A replays each attack the way it ran in the lab: the same commands, the same log lines, the same Wazuh rule IDs. The stills below it are real screenshots from the dashboard.</span>
+                <span lang="fr">La pièce 01-A rejoue chaque attaque telle qu’elle s’est déroulée dans le laboratoire : les mêmes commandes, les mêmes lignes de journal, les mêmes identifiants de règles Wazuh. Les images en dessous sont de vraies captures d’écran du tableau de bord.</span>
+              </p>
+
+              <figure class="exhibit" data-reveal>
+                <div class="exhibit__tab"><b><span lang="en">Exhibit</span><span lang="fr">Pièce</span> 01-A</b><span><span lang="en">Attack replay</span><span lang="fr">Reconstitution d’attaque</span></span></div>
+                <div class="widget" id="siem-replay"></div>
+              </figure>
+
+              <div class="stills" id="siem-stills" data-reveal-group></div>
+            </section>
+
+            <!-- 5.0 Detections -->
+            <section class="part" id="detections" aria-labelledby="detections-h">
+              <h2 class="part__h" id="detections-h" data-reveal><span class="part__n">5.0</span><span lang="en">Detection engineering</span><span lang="fr">Ingénierie de détection</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">The custom app writes one line per login attempt. A decoder turns that line into fields, and four rules build on each other: any event, a failure, a burst of failures, then a success after the burst.</span>
+                <span lang="fr">L’application maison écrit une ligne par tentative de connexion. Un décodeur transforme cette ligne en champs, et quatre règles s’appuient les unes sur les autres : tout événement, un échec, une rafale d’échecs, puis une réussite après la rafale.</span>
+              </p>
+
+              <div class="tblwrap" data-reveal tabindex="0" role="region" aria-labelledby="rules-cap">
+                <table class="tbl">
+                  <caption id="rules-cap">5.1 <span lang="en">The rule ladder</span><span lang="fr">L’échelle de règles</span></caption>
+                  <thead>
+                    <tr>
+                      <th scope="col"><span lang="en">Rule</span><span lang="fr">Règle</span></th>
+                      <th scope="col"><span lang="en">Level</span><span lang="fr">Niveau</span></th>
+                      <th scope="col"><span lang="en">Fires when</span><span lang="fr">Se déclenche quand</span></th>
+                      <th scope="col">MITRE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><th scope="row"><code>100100</code></th><td>3</td><td><span lang="en">Any CustomApp event is decoded</span><span lang="fr">Un événement CustomApp est décodé</span></td><td>—</td></tr>
+                    <tr><th scope="row"><code>100101</code></th><td>5</td><td><span lang="en">A single <code>LOGIN_FAILED</code></span><span lang="fr">Un seul <code>LOGIN_FAILED</code></span></td><td>T1110</td></tr>
+                    <tr><th scope="row"><code>100102</code></th><td>10</td><td><span lang="en">5+ failures from the same <code>srcip</code> within 120 s (brute force)</span><span lang="fr">5 échecs ou plus du même <code>srcip</code> en 120 s (force brute)</span></td><td>T1110</td></tr>
+                    <tr><th scope="row"><code>100103</code></th><td>12</td><td><span lang="en">A <code>LOGIN_SUCCESS</code> from that <code>srcip</code> within 300 s (compromise)</span><span lang="fr">Un <code>LOGIN_SUCCESS</code> de ce même <code>srcip</code> en 300 s (compromission)</span></td><td>T1110</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 class="part__sub" data-reveal>5.2 <span lang="en">The log line</span><span lang="fr">La ligne de journal</span></h3>
+              <figure class="codefig" data-reveal>
+                <figcaption><b>CustomApp</b><span><span lang="en">written by the C# log generator</span><span lang="fr">produite par le générateur de journaux C#</span></span></figcaption>
+                <pre class="code"><code>Jun 07 14:03:11 APPSRV CustomApp: action=LOGIN_FAILED user=jdoe srcip=10.10.10.20 reason=bad_password</code></pre>
+              </figure>
+
+              <h3 class="part__sub" data-reveal>5.3 <span lang="en">The decoder</span><span lang="fr">Le décodeur</span></h3>
+              <figure class="codefig" data-reveal>
+                <figcaption><b>detections/decoders/local_decoder.xml</b><span>Wazuh</span></figcaption>
+                <pre class="code"><code>&lt;decoder name="customapp"&gt;
+  &lt;program_name&gt;^CustomApp$&lt;/program_name&gt;
+&lt;/decoder&gt;
+
+&lt;decoder name="customapp-fields"&gt;
+  &lt;parent&gt;customapp&lt;/parent&gt;
+  &lt;regex&gt;action=(\S+) user=(\S+) srcip=(\S+) reason=(\S+)&lt;/regex&gt;
+  &lt;order&gt;app_action, user, srcip, reason&lt;/order&gt;
+&lt;/decoder&gt;</code></pre>
+              </figure>
+              <p class="part__note" data-reveal>
+                <span lang="en">The action is stored as <code>app_action</code>: <code>action</code> is a reserved static field in Wazuh and cannot be matched in rules.</span>
+                <span lang="fr">L’action est enregistrée sous <code>app_action</code> : <code>action</code> est un champ statique réservé dans Wazuh et ne peut pas servir dans les règles.</span>
+              </p>
+
+              <h3 class="part__sub" data-reveal>5.4 <span lang="en">The correlation rules</span><span lang="fr">Les règles de corrélation</span></h3>
+              <figure class="codefig" data-reveal>
+                <figcaption><b>detections/rules/local_rules.xml</b><span>Wazuh</span></figcaption>
+                <pre class="code"><code>&lt;group name="customapp,authentication,"&gt;
+
+  &lt;rule id="100100" level="3"&gt;
+    &lt;decoded_as&gt;customapp&lt;/decoded_as&gt;
+    &lt;description&gt;CustomApp event logged.&lt;/description&gt;
+  &lt;/rule&gt;
+
+  &lt;rule id="100101" level="5"&gt;
+    &lt;if_sid&gt;100100&lt;/if_sid&gt;
+    &lt;field name="app_action"&gt;LOGIN_FAILED&lt;/field&gt;
+    &lt;description&gt;CustomApp: failed login for user $(user) from $(srcip).&lt;/description&gt;
+    &lt;group&gt;authentication_failed,&lt;/group&gt;
+    &lt;mitre&gt;
+      &lt;id&gt;T1110&lt;/id&gt;
+    &lt;/mitre&gt;
+  &lt;/rule&gt;
+
+  <span class="c">&lt;!-- Correlation: 5+ failures from the SAME source ip within 120 seconds. --&gt;</span>
+  &lt;rule id="100102" level="10" frequency="5" timeframe="120"&gt;
+    &lt;if_matched_sid&gt;100101&lt;/if_matched_sid&gt;
+    &lt;same_srcip /&gt;
+    &lt;description&gt;CustomApp: possible brute force - 5+ failed logins from $(srcip) in 120s.&lt;/description&gt;
+    &lt;group&gt;authentication_failures,brute_force,&lt;/group&gt;
+    &lt;mitre&gt;
+      &lt;id&gt;T1110&lt;/id&gt;
+    &lt;/mitre&gt;
+  &lt;/rule&gt;
+
+  <span class="c">&lt;!-- A successful login from that same source shortly after the burst = likely compromise. --&gt;</span>
+  &lt;rule id="100103" level="12" timeframe="300"&gt;
+    &lt;if_sid&gt;100100&lt;/if_sid&gt;
+    &lt;field name="app_action"&gt;LOGIN_SUCCESS&lt;/field&gt;
+    &lt;if_matched_sid&gt;100102&lt;/if_matched_sid&gt;
+    &lt;same_srcip /&gt;
+    &lt;description&gt;CustomApp: successful login from $(srcip) following a brute-force burst - possible account compromise.&lt;/description&gt;
+    &lt;group&gt;authentication_success,account_compromise,&lt;/group&gt;
+    &lt;mitre&gt;
+      &lt;id&gt;T1110&lt;/id&gt;
+    &lt;/mitre&gt;
+  &lt;/rule&gt;
+
+&lt;/group&gt;</code></pre>
+              </figure>
+              <p class="part__note" data-reveal>
+                <span lang="en">Validated with <code>wazuh-logtest</code> before reloading the manager, then driven end to end by the log generator: <code>dotnet run -- --scenario compromise</code>.</span>
+                <span lang="fr">Validées avec <code>wazuh-logtest</code> avant de recharger le gestionnaire, puis mises à l’épreuve de bout en bout par le générateur de journaux : <code>dotnet run -- --scenario compromise</code>.</span>
+              </p>
+            </section>
+
+            <!-- 6.0 Findings -->
+            <section class="part" id="findings" aria-labelledby="findings-h">
+              <h2 class="part__h" id="findings-h" data-reveal><span class="part__n">6.0</span><span lang="en">Findings</span><span lang="fr">Constats</span></h2>
+              <ol class="findings" data-reveal-group>
+                <li class="finding">
+                  <p class="finding__id">F-01 <span class="finding__tag"><span lang="en">T1046 · Discovery</span><span lang="fr">T1046 · Découverte</span></span></p>
+                  <h3><span lang="en">Recon mapped the firewall, not the domain controller.</span><span lang="fr">La reconnaissance a cartographié le pare-feu, pas le contrôleur de domaine.</span></h3>
+                  <p>
+                    <span lang="en">The domain controller's default-deny host firewall showed every port filtered. pfSense answered on DNS and its web GUI from the LAN, so that went on the hardening list.</span>
+                    <span lang="fr">Le pare-feu hôte du contrôleur de domaine, en refus par défaut, montrait tous les ports filtrés. pfSense répondait sur le DNS et son interface web depuis le LAN : c’est allé sur la liste de durcissement.</span>
+                  </p>
+                </li>
+                <li class="finding">
+                  <p class="finding__id">F-02 <span class="finding__tag"><span lang="en">T1110 · custom app</span><span lang="fr">T1110 · application maison</span></span></p>
+                  <h3><span lang="en">Seven boring log lines became one level-12 alert.</span><span lang="fr">Sept lignes anodines sont devenues une alerte de niveau 12.</span></h3>
+                  <p>
+                    <span lang="en">Each failed login is a level-5 event on its own. Five from one address in 120 seconds is a level-10 brute force, and a success after the burst is a level-12 possible compromise. That escalation is the whole point of correlation.</span>
+                    <span lang="fr">Chaque connexion échouée est un événement de niveau 5 à elle seule. Cinq depuis la même adresse en 120 secondes, c’est une force brute de niveau 10, et une réussite après la rafale est une compromission possible de niveau 12. Cette escalade est tout l’intérêt de la corrélation.</span>
+                  </p>
+                </li>
+                <li class="finding">
+                  <p class="finding__id">F-03 <span class="finding__tag">T1110 · SMB</span></p>
+                  <h3><span lang="en">A weak service-account password fell to a short spray.</span><span lang="fr">Un mot de passe faible de compte de service est tombé après une courte pulvérisation.</span></h3>
+                  <p>
+                    <span lang="en"><code>tservice</code> used <code>Password1</code>, which still satisfies the default complexity policy. Wazuh's built-in rules caught the run: <code>60122</code>, then <code>60204</code> at level 10, then the flagged remote logon <code>92652</code>.</span>
+                    <span lang="fr"><code>tservice</code> utilisait <code>Password1</code>, qui respecte pourtant la politique de complexité par défaut. Les règles intégrées de Wazuh ont détecté la séquence : <code>60122</code>, puis <code>60204</code> au niveau 10, puis la connexion à distance signalée <code>92652</code>.</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
+
+            <!-- 7.0 Remediation -->
+            <section class="part" id="remediation" aria-labelledby="remediation-h">
+              <h2 class="part__h" id="remediation-h" data-reveal><span class="part__n">7.0</span><span lang="en">Remediation</span><span lang="fr">Correctifs</span></h2>
+              <p class="part__intro" data-reveal>
+                <span lang="en">Recommendations from the two playbooks, hardening first.</span>
+                <span lang="fr">Les recommandations des deux playbooks, en commençant par le durcissement.</span>
+              </p>
+              <ol class="actions" data-reveal-group>
+                <li>
+                  <span class="actions__id">R-01</span>
+                  <span class="pill pill--blue"><span lang="en">Hardening</span><span lang="fr">Durcissement</span></span>
+                  <p>
+                    <span lang="en"><b>Enforce an account lockout policy</b> so a spray locks the account before it succeeds. The single most effective control against this attack.</span>
+                    <span lang="fr"><b>Appliquer une politique de verrouillage des comptes</b>, pour qu’une pulvérisation verrouille le compte avant de réussir. Le contrôle le plus efficace contre cette attaque.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-02</span>
+                  <span class="pill pill--blue"><span lang="en">Hardening</span><span lang="fr">Durcissement</span></span>
+                  <p>
+                    <span lang="en"><b>Give the service account a long random password</b>, or a group managed service account, so no static password exists to guess.</span>
+                    <span lang="fr"><b>Donner au compte de service un mot de passe long et aléatoire</b>, ou un compte de service géré de groupe (gMSA), pour qu’aucun mot de passe statique ne puisse être deviné.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-03</span>
+                  <span class="pill pill--blue"><span lang="en">Hardening</span><span lang="fr">Durcissement</span></span>
+                  <p>
+                    <span lang="en"><b>Restrict SMB on the domain controller</b> to the hosts that legitimately need it.</span>
+                    <span lang="fr"><b>Restreindre SMB sur le contrôleur de domaine</b> aux hôtes qui en ont réellement besoin.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-04</span>
+                  <span class="pill pill--blue"><span lang="en">Hardening</span><span lang="fr">Durcissement</span></span>
+                  <p>
+                    <span lang="en"><b>Limit pfSense's web GUI</b> (80/443) to the management hosts that need it.</span>
+                    <span lang="fr"><b>Limiter l’interface web de pfSense</b> (80/443) aux hôtes de gestion qui en ont besoin.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-05</span>
+                  <span class="pill pill--warn"><span lang="en">Detection</span><span lang="fr">Détection</span></span>
+                  <p>
+                    <span lang="en"><b>Forward pfSense logs into Wazuh</b> and flag one source hitting many distinct ports in a short window, turning firewall noise into a scan alert.</span>
+                    <span lang="fr"><b>Transmettre les journaux de pfSense à Wazuh</b> et signaler une source qui touche de nombreux ports distincts en peu de temps, pour transformer le bruit du pare-feu en alerte de balayage.</span>
+                  </p>
+                </li>
+                <li>
+                  <span class="actions__id">R-06</span>
+                  <span class="pill pill--warn"><span lang="en">Detection</span><span lang="fr">Détection</span></span>
+                  <p>
+                    <span lang="en"><b>Raise the severity of <code>92652</code></b> when it directly follows a <code>60204</code> from the same source: the brute force that worked, as one incident.</span>
+                    <span lang="fr"><b>Hausser la gravité de <code>92652</code></b> quand elle suit directement une <code>60204</code> de la même source : la force brute qui a réussi, en un seul incident.</span>
+                  </p>
+                </li>
+              </ol>
+            </section>
+
+            <!-- 8.0 Lessons -->
+            <section class="part" id="lessons" aria-labelledby="lessons-h">
+              <h2 class="part__h" id="lessons-h" data-reveal><span class="part__n">8.0</span><span lang="en">Lessons learned</span><span lang="fr">Leçons apprises</span></h2>
+              <ol class="findings" data-reveal-group>
+                <li class="finding">
+                  <p class="finding__id">L-01 <span class="finding__tag">Wazuh</span></p>
+                  <h3><span lang="en">Check the disk before the install.</span><span lang="fr">Vérifier le disque avant l’installation.</span></h3>
+                  <p>
+                    <span lang="en">Ubuntu's guided LVM install gave the root volume only 24 GB of the 50 GB disk, and the Wazuh dashboard ran out of space mid-install. On a server that unpacks large packages, extend the volume to the whole disk first.</span>
+                    <span lang="fr">L’installation LVM guidée d’Ubuntu n’a donné que 24 Go des 50 Go du disque au volume racine, et le tableau de bord Wazuh a manqué d’espace en pleine installation. Sur un serveur qui décompresse de gros paquets, il faut d’abord étendre le volume à tout le disque.</span>
+                  </p>
+                </li>
+                <li class="finding">
+                  <p class="finding__id">L-02 <span class="finding__tag">Windows Server</span></p>
+                  <h3><span lang="en">Use the vendor's ISO.</span><span lang="fr">Utiliser l’ISO de l’éditeur.</span></h3>
+                  <p>
+                    <span lang="en">A repackaged Windows Server ISO would not boot under BIOS or UEFI. The official Microsoft evaluation ISO booted straight away, with the VM's firmware set to EFI.</span>
+                    <span lang="fr">Une ISO Windows Server reconditionnée refusait de démarrer, en BIOS comme en UEFI. L’ISO d’évaluation officielle de Microsoft a démarré tout de suite, avec le micrologiciel de la VM réglé sur EFI.</span>
+                  </p>
+                </li>
+                <li class="finding">
+                  <p class="finding__id">L-03 <span class="finding__tag"><span lang="en">Triage</span><span lang="fr">Triage</span></span></p>
+                  <h3><span lang="en">Recon comes first.</span><span lang="fr">La reconnaissance vient en premier.</span></h3>
+                  <p>
+                    <span lang="en">A scan is usually the opening move. When one fires, check what the same source does next: here, it moved on to an SMB brute force against the domain controller.</span>
+                    <span lang="fr">Un balayage est souvent le premier coup. Quand il se déclenche, il faut regarder ce que la même source fait ensuite : ici, elle est passée à une force brute SMB contre le contrôleur de domaine.</span>
+                  </p>
+                </li>
+              </ol>
+
+              <nav class="pager">
+                <a href="./#projects">
+                  <span><span lang="en">← All projects</span><span lang="fr">← Tous les projets</span></span>
+                  <b>Makan Homayoun</b>
+                </a>
+                <a class="pager__next" href="./threat-triage.html">
+                  <span><span lang="en">Next · Project 2 →</span><span lang="fr">Suivant · Projet 2 →</span></span>
+                  <b><span lang="en">Automated Threat Triage</span><span lang="fr">Triage automatisé des menaces</span></b>
+                </a>
+              </nav>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <p class="footer__end" aria-hidden="true"><span><span lang="en">End of file</span><span lang="fr">Fin du dossier</span></span></p>
+        <div class="footer__row">
+          <p>© 2026 Makan Homayoun · Montréal, QC</p>
+          <ul class="footer__links">
+            <li>
+              <a href="mailto:makan.h07@gmail.com"><svg class="icon" aria-hidden="true"><use href="#i-mail" /></svg>makan.h07@gmail.com</a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/makan-homayoun" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-linkedin" /></svg>LinkedIn</a>
+            </li>
+            <li>
+              <a href="https://github.com/MakanH" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-github" /></svg>GitHub</a>
+            </li>
+          </ul>
+          <a class="footer__top" href="#top">
+            <span lang="en">Back to top</span><span lang="fr">Haut de page</span>
+            <svg class="icon icon--sm" aria-hidden="true" style="transform: rotate(180deg)"><use href="#i-arrow-down" /></svg>
+          </a>
+        </div>
+      </div>
+      <div class="tlp tlp--foot">
+        <div class="wrap tlp__row">
+          <span class="tlp__mark">TLP:CLEAR</span>
+          <span class="tlp__text"><span lang="en">Public release · no limit on disclosure</span><span lang="fr">Diffusion publique · aucune restriction</span></span>
+        </div>
+      </div>
+    </footer>
+
+
+    <dialog class="lightbox" id="lightbox">
+      <button class="lightbox__close" type="button" data-close>
+        <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+        <span class="sr-only"><span lang="en">Close</span><span lang="fr">Fermer</span></span>
+      </button>
+      <figure>
+        <img id="lightbox-img" alt="" />
+        <figcaption id="lightbox-cap"></figcaption>
+      </figure>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
